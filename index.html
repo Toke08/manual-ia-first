@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>IA First · Manual operativo de prompts</title>
+<style>
+  :root{
+    --bg:#0a0c10; --bg2:#111620; --card:#141b25; --line:#222c3a;
+    --tx:#eaf1f8; --dim:#93a3b6; --acc:#7ee787; --acc2:#6cb6ff; --warn:#f0b429; --vio:#c297ff;
+    --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:radial-gradient(1200px 600px at 20% -10%,#12202e 0%,var(--bg) 55%);color:var(--tx);
+       font:16px/1.62 -apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif}
+  a{color:var(--acc2);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1100px;margin:0 auto;padding:34px 20px 90px}
+  .kicker{font:700 11px/1 var(--mono);letter-spacing:.18em;text-transform:uppercase;color:var(--acc)}
+  h1{font-size:clamp(28px,4.4vw,46px);line-height:1.08;margin:12px 0 12px;letter-spacing:-.03em}
+  h1 em{font-style:normal;color:var(--acc)}
+  .sub{color:var(--dim);max-width:74ch;font-size:17px}
+  .stats{display:flex;gap:22px;flex-wrap:wrap;margin:22px 0 0;padding:16px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .stat b{display:block;font:700 22px var(--mono);color:var(--acc)}
+  .stat span{font-size:12px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em}
+  nav.toc{display:flex;gap:8px;flex-wrap:wrap;margin:22px 0 8px}
+  nav.toc a{font:600 12px var(--mono);color:var(--dim);border:1px solid var(--line);border-radius:999px;padding:7px 12px}
+  nav.toc a:hover{color:var(--tx);border-color:var(--acc2);text-decoration:none}
+  h2{font-size:25px;margin:52px 0 8px;letter-spacing:-.02em;scroll-margin-top:80px}
+  h2 .n{font:700 13px var(--mono);color:var(--acc);margin-right:10px}
+  .lead{color:var(--dim);margin:0 0 18px;max-width:78ch}
+  .toolbar{position:sticky;top:0;z-index:30;background:linear-gradient(180deg,var(--bg) 72%,transparent);padding:14px 0 10px;
+           display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+  input[type=search]{flex:1;min-width:240px;background:var(--bg2);border:1px solid var(--line);color:var(--tx);
+        border-radius:11px;padding:12px 15px;font-size:15px;outline:none}
+  input[type=search]:focus{border-color:var(--acc2);box-shadow:0 0 0 3px #6cb6ff22}
+  .chip{border:1px solid var(--line);background:var(--bg2);color:var(--dim);border-radius:999px;padding:8px 13px;
+        font:600 12px/1 var(--mono);cursor:pointer}
+  .chip:hover{color:var(--tx)}
+  .chip.on{color:#08110a;background:var(--acc);border-color:var(--acc)}
+  .grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(330px,1fr))}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:15px 16px}
+  .card h3{margin:6px 0 8px;font-size:16.5px;line-height:1.35}
+  .meta{display:flex;gap:7px;flex-wrap:wrap;align-items:center;font:600 10.5px/1 var(--mono);color:var(--dim)}
+  .tag{background:#1b2431;border:1px solid var(--line);border-radius:999px;padding:4px 8px;letter-spacing:.04em}
+  .tag.s1{color:var(--vio);border-color:#3a2f55}.tag.s2{color:var(--acc);border-color:#274a2c}
+  .tag.s3{color:var(--warn);border-color:#4a3c12}.tag.s4{color:var(--acc2);border-color:#1f3b5c}
+  .tag.literal{color:#8fe3a2}.tag.reconstruido{color:#b9a26a}
+  .tag.ts{font-family:var(--mono)}
+  pre.prompt{position:relative;margin:10px 0;background:#0c1118;border:1px solid var(--line);border-radius:10px;
+        padding:13px 12px;white-space:pre-wrap;word-break:break-word;font:13.2px/1.55 var(--mono);color:#d9e6f2}
+  .copy{float:right;margin:-4px -2px 6px 10px;background:#1b2431;border:1px solid var(--line);color:var(--dim);
+        border-radius:7px;font:700 10.5px var(--mono);padding:5px 9px;cursor:pointer}
+  .copy:hover{color:var(--tx);border-color:var(--acc2)}
+  .copy.done{color:var(--acc);border-color:#2c5a33}
+  .note{color:var(--dim);font-size:14px;margin:7px 0 0}
+  .note b{color:#cfe0ef;font-weight:600}
+  details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:13px 16px;margin:10px 0}
+  details summary{cursor:pointer;font-weight:650;font-size:15px}
+  ul.clean{margin:10px 0 0;padding-left:20px;color:var(--dim);font-size:14.5px}
+  ul.clean li{margin:10px 0}
+  ul.clean b{color:var(--tx)}
+  .ts{font:600 11px var(--mono);color:#7d8fa3}
+  .callout{border-left:3px solid var(--acc);background:#0e161f;padding:14px 17px;border-radius:0 11px 11px 0;color:var(--dim);margin:16px 0}
+  .callout b{color:var(--tx)}
+  .callout.warn{border-left-color:var(--warn);background:#161206}
+  .callout.bad{border-left-color:#f2746b;background:#170d0d}
+  table{width:100%;border-collapse:collapse;font-size:14.5px;margin-top:10px}
+  th,td{text-align:left;padding:10px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{color:var(--dim);font:700 11px var(--mono);text-transform:uppercase;letter-spacing:.07em}
+  .caps{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));margin-top:14px}
+  .cap{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .cap .num{font:700 12px var(--mono);color:var(--acc);letter-spacing:.1em}
+  .cap h4{margin:8px 0 6px;font-size:16px}
+  .cap p{margin:0;color:var(--dim);font-size:14.5px}
+  .cap.wide{grid-column:1/-1}
+  .cap.wide ul{margin:12px 0 10px}
+  .cap.wide li{margin:8px 0}
+  .cap.wide p+p{margin-top:10px}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:12px 0 0}
+  ol.steps li{counter-increment:s;position:relative;padding:14px 0 14px 50px;border-bottom:1px dashed var(--line)}
+  ol.steps li:before{content:counter(s);position:absolute;left:0;top:12px;width:32px;height:32px;border-radius:50%;
+        background:#132030;border:1px solid var(--line);color:var(--acc);font:700 13px/30px var(--mono);text-align:center}
+  ol.steps b{color:var(--tx)}
+  blockquote{margin:10px 0;padding:12px 16px;border-left:2px solid #2f3d4f;color:#c3d2e0;font-style:italic}
+  blockquote cite{display:block;margin-top:6px;font:600 11px var(--mono);color:#6f8091;font-style:normal}
+  footer{margin-top:70px;border-top:1px solid var(--line);padding-top:20px;color:var(--dim);font-size:13px}
+  .hidden{display:none!important}
+  .empty{color:var(--dim);padding:18px;border:1px dashed var(--line);border-radius:12px}
+  @media(max-width:560px){.wrap{padding:22px 14px 70px}.stats{gap:16px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="kicker">IA First · Instituto de Rendimiento Empresarial</div>
+  <h1>El manual de uso de la IA<br><em>tal y como lo hacen ellos</em></h1>
+  <p class="sub">Todo lo que los cuatro ponentes dicen a la IA, extraído de las transcripciones y ordenado para usarlo hoy. Prompts copiables, la lógica detrás de cada uno y el orden correcto para montarlo en tu negocio.</p>
+
+  <div class="stats">
+    <div class="stat"><b>60</b><span>prompts</span></div>
+    <div class="stat"><b>58</b><span>técnicas</span></div>
+    <div class="stat"><b>4</b><span>lecciones</span></div>
+    <div class="stat"><b>7 h 48</b><span>de clase</span></div>
+  </div>
+
+  <nav class="toc">
+    <a href="#orden">1 · Por dónde empezar</a>
+    <a href="#capas">2 · Sistema de 3 capas</a>
+    <a href="#jerarquia">3 · Jerarquía creativa</a>
+    <a href="#lider">4 · Liderar la IA</a>
+    <a href="#config">5 · Configurar Claude</a>
+    <a href="#prompts">6 · Banco de prompts</a>
+    <a href="#tecnicas">7 · Técnicas</a>
+    <a href="#avisos">8 · Errores</a>
+    <a href="#dudas">9 · Contradicciones</a>
+  </nav>
+
+  <h2 id="orden"><span class="n">01</span>Por dónde empezar (el orden que ellos usan)</h2>
+  <p class="lead">Los cuatro coinciden en el mismo esqueleto: primero el contexto, después la tarea, al final la ejecución. Si inviertes el orden, la IA rellena los huecos inventando y acabas corrigiendo más de lo que tardarías en hacerlo tú.</p>
+  <ol class="steps">
+    <li><b>Contexto general una sola vez.</b> Quién eres, a quién ayudas, qué vendes, mapa de empatía del avatar y objetivos. Se le da en una sesión larga de entrevista y se guarda en una carpeta o proyecto. <span class="ts">[L3 · 20:48]</span></li>
+    <li><b>Contexto específico por tarea.</b> Qué pieza es, en qué fase del embudo está, qué ha funcionado antes y con qué datos cuentas. <span class="ts">[L2 · 24:18]</span></li>
+    <li><b>Criterio: dáselo y pídeselo.</b> Dale tu criterio (ejemplos, voz, antivoz) y pídele el suyo (que te puntúe, que te justifique, que te diga qué falta). <span class="ts">[L1 · 42:27]</span></li>
+    <li><b>Skills o proyectos para lo recurrente.</b> Lo que repites cada semana se convierte en una habilidad o un proyecto con instrucciones, no en un prompt que reescribes cada vez. <span class="ts">[L4 · 09:07]</span></li>
+    <li><b>Ejecución con conectores.</b> Que el resultado caiga directamente en la herramienta (email, Airtable, Notion, calendario) y no tengas que copiar y pegar. <span class="ts">[L4 · 14:26]</span></li>
+    <li><b>Auditoría antes de validar.</b> Autoevaluación del 1 al 100, justificación de la respuesta y «¿qué te falta?». Si no pasa, se corrige o se abre chat nuevo. <span class="ts">[L4 · 1:20:59]</span></li>
+  </ol>
+
+  <div class="callout"><b>Regla que se repite en las cuatro clases:</b> la IA no te da una respuesta mejor de lo que le entregas; siempre está en tu línea o justo por debajo. El techo lo pones tú.</div>
+
+  <h2 id="capas"><span class="n">02</span>El sistema de 3 capas (la columna vertebral)</h2>
+  <p class="lead">Es el modelo que explica el ponente con más criterio en IA. Todo su trabajo con Claude se divide en tres capas, y cada una resuelve un problema distinto.</p>
+  <div class="caps">
+    <div class="cap"><div class="num">CAPA 1</div><h4>Contexto general</h4><p>Quién eres (persona y empresario), a quién ayudas, tu oferta, tus avatares y objetivos. Se monta una vez y apenas cambia.</p></div>
+    <div class="cap"><div class="num">CAPA 2</div><h4>Contexto específico + criterio</h4><p>Los datos concretos de la tarea (métricas, objetivos numéricos, documentos, diseño) y las <b>skills</b>: habilidades que le dan criterio de experto y que activa sola cuando toca.</p></div>
+    <div class="cap"><div class="num">CAPA 3</div><h4>Ejecución</h4><p>Conectores y MCPs para que el resultado se escriba donde tiene que vivir: emails en la plataforma, calendario en Airtable, PDF o HTML listo.</p></div>
+  </div>
+  <table>
+    <tr><th>Pieza</th><th>Qué resuelve</th><th>Dónde vive</th></tr>
+    <tr><td>Memoria + documentos madre</td><td>Que no tengas que repetir quién eres</td><td>Capa 1</td></tr>
+    <tr><td>Proyecto con instrucciones</td><td>Que la tarea recurrente salga igual de bien siempre</td><td>Capa 2</td></tr>
+    <tr><td>Skills</td><td>Pasar de un 7/10 a un 10/10 (junior con teoría → senior con experiencia)</td><td>Capa 2</td></tr>
+    <tr><td>Documentos en .md</td><td>Menos tokens y mejor lectura que PDF o Word</td><td>Capa 2</td></tr>
+    <tr><td>Conectores</td><td>Eliminar el copiar y pegar final</td><td>Capa 3</td></tr>
+  </table>
+  <div class="callout"><b>Por qué funciona:</b> el proyecto cachea el contexto, así que cada chat nuevo es solo ejecución. Chat corto, menos tokens, entregable terminado.</div>
+
+  <h2 id="jerarquia"><span class="n">03</span>La jerarquía de 5 pasos para crear cualquier cosa</h2>
+  <p class="lead">Del experto en contenido. El orden no es negociable: el copy no sale en el primer impacto, sale en el último.</p>
+  <div class="caps">
+    <div class="cap"><div class="num">PASO 1</div><h4>Contexto</h4><p>Vuelcas todo con matices: objetivo, fase del embudo, qué funcionó el mes pasado, avatar, restricciones e innegociables (lo que no vas a cambiar).</p></div>
+    <div class="cap wide">
+      <div class="num">PASO 2</div>
+      <h4>Ángulos (o escenarios)</h4>
+      <p><b>El ángulo es desde dónde atacas el mismo mensaje.</b> No es una idea nueva: es el enfoque. Dos o tres, no veinte, para no casarte con la primera ocurrencia.</p>
+      <ul class="clean">
+        <li><b>Conciencia:</b> quien no sabe que tiene el problema ≠ quien ya busca solución.</li>
+        <li><b>Cliente:</b> un ángulo por perfil (madres recientes / opositores / dolor crónico).</li>
+        <li><b>Momento:</b> lo que necesita tu gente este mes.</li>
+        <li><b>CTA:</b> uno para crecer, otro para captar, otro para vender.</li>
+      </ul>
+      <p class="note"><b>Escenario</b> es otra cosa: variante de plan con los datos del lanzamiento anterior, decidiendo qué optimizas.</p>
+    </div>
+    <div class="cap"><div class="num">PASO 3</div><h4>Estructura</h4><p>Conviertes el ángulo elegido en esqueleto: gancho, desarrollo, cierre, CTA.</p></div>
+    <div class="cap"><div class="num">PASO 4</div><h4>Crítica</h4><p>La IA busca huecos y tú decides qué se cambia. Contraargumenta, puntúa del 1 al 10, defiende la postura contraria.</p></div>
+    <div class="cap"><div class="num">PASO 5</div><h4>Voz</h4><p>Lo último: que suene a ti. Para eso le entregas la <b>antivoz</b>: lo que nunca dirías.</p></div>
+  </div>
+  <div class="callout warn"><b>La antivoz es la pieza más rentable:</b> es más fácil decirle lo que NO es tu voz (expresiones, palabras, temas) que describir tu estilo. Hazlo antes de pedir cualquier texto.</div>
+
+  <h2 id="lider"><span class="n">04</span>Cómo liderar a la IA (psicología aplicada)</h2>
+  <p class="lead">De la ponente psicóloga. No es motivación: es el criterio que decide si la IA te sirve o te hace perder el tiempo.</p>
+  <table>
+    <tr><th>Si tú…</th><th>La IA…</th><th>Resultado</th></tr>
+    <tr><td>No das criterio</td><td>Te da la respuesta más probable y corta</td><td>Genérico, inservible</td></tr>
+    <tr><td>Das criterio</td><td>Ejecuta con tu marco</td><td>Mucho mejor, pero no lo puedes auditar</td></tr>
+    <tr><td>Pides criterio</td><td>Te explica su rúbrica</td><td>Puedes detectar dónde se equivoca</td></tr>
+    <tr><td>Das y pides criterio</td><td>Fusiona los dos marcos</td><td>Tu criterio, ampliado</td></tr>
+  </table>
+  <div class="callout"><b>Test de los 3 segundos:</b> ante cualquier tarea, pregúntate (1) ¿puede hacerla la IA?, (2) ¿qué criterio le doy?, (3) ¿qué criterio le pido? Si repites el mismo patrón cada semana, eso ya es una skill o una tarea programada.</div>
+  <div class="callout bad"><b>Lo que no se delega:</b> la creatividad, tu voz y tu criterio. La IA no hace trabajos, hace tareas. Si le pides «sé yo», el resultado no llega a ningún sitio.</div>
+
+  <h2 id="config"><span class="n">05</span>Configurar Claude (lo mínimo que sí merece la pena)</h2>
+  <p class="lead">La lección 3 es la más floja de las cuatro: interfaz y configuración básica. Lo aprovechable es la carpeta de contexto, los conectores y el ritual diario. El resto está resumido o descartado.</p>
+  <ol class="steps">
+    <li><b>Carpeta de contexto.</b> Le das acceso a una carpeta propia donde Claude lee, escribe y organiza. Es lo que sustituye a la memoria del chat.</li>
+    <li><b>Conectores.</b> Google Calendar y Drive activados: planificar el día y leer documentos sin salir del chat.</li>
+    <li><b>Ritual diario.</b> Chat nuevo con la carpeta activada, «¿qué tengo en el calendario?», bloquear huecos y seguir el día en ese chat.</li>
+    <li><b>Megaprompt de entrevista.</b> Una sesión larga donde te entrevista pregunta a pregunta y cierra guardando los documentos del negocio en la carpeta.</li>
+    <li><b>Auditoría mensual.</b> «¿Qué tienes guardado de X?» y borras lo que esté mal. El contexto se pudre si no lo revisas.</li>
+  </ol>
+
+  <h2 id="prompts"><span class="n">06</span>Banco de prompts</h2>
+  <p class="lead">60 prompts con el minuto exacto del vídeo. <b>Literal</b> = copiado de lo que el ponente dicta o lee. <b>Reconstruido</b> = la misma instrucción explicada en clase, redactada para poder pegarla.</p>
+
+  <div class="toolbar">
+    <input id="q" type="search" placeholder="Buscar: skill, contexto, email, guion, avatar, landing, autoevaluar…">
+    <button class="chip on" data-f="all">Todo</button>
+    <button class="chip" data-f="1">L1 · Liderar</button>
+    <button class="chip" data-f="2">L2 · Crear</button>
+    <button class="chip" data-f="3">L3 · Config</button>
+    <button class="chip" data-f="4">L4 · 3 capas</button>
+  </div>
+  <div id="plist" class="grid">
+    <article class="card prompt" data-lesson="1" data-text="define las características principales de la psicología de mi avatar. tener la psicología del cliente ideal antes de pedir cualquier pieza creativa. primero se le cuenta el proyecto y el avatar; solo después se le pide el guion o el copy.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">04:02</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Define las características principales de la psicología de mi avatar.</span></pre>
+      <p class="note"><b>Para qué:</b> Tener la psicología del cliente ideal antes de pedir cualquier pieza creativa.</p>
+      <p class="note"><b>Cómo se usa:</b> Primero se le cuenta el proyecto y el avatar; solo después se le pide el guion o el copy.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="dime los 15 tipos de bloqueos en emprendedores. contraejemplo: así se pide sin criterio y sale la respuesta más pobre. es lo que hace la mayoría; como no tienes criterio, los 15 puntos genéricos te valen todos.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">44:44</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Dime los 15 tipos de bloqueos en emprendedores.</span></pre>
+      <p class="note"><b>Para qué:</b> Contraejemplo: así se pide sin criterio y sale la respuesta más pobre.</p>
+      <p class="note"><b>Cómo se usa:</b> Es lo que hace la mayoría; como no tienes criterio, los 15 puntos genéricos te valen todos.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="sabiendo que estas son las características de un emprendedor en esta fase, ¿cuáles son los principales bloqueos con los que se va a encontrar en este momento concreto? que la lista de bloqueos sea de su caso real, no un decálogo genérico. se sustituyen las características por las reales antes de lanzarlo; luego se valida con el prompt de criterio.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">44:44</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Sabiendo que estas son las características de un emprendedor en esta fase, ¿cuáles son los principales bloqueos con los que se va a encontrar en este momento concreto?</span></pre>
+      <p class="note"><b>Para qué:</b> Que la lista de bloqueos sea de su caso real, no un decálogo genérico.</p>
+      <p class="note"><b>Cómo se usa:</b> Se sustituyen las características por las reales antes de lanzarlo; luego se valida con el prompt de criterio.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="¿con qué criterio debería evaluar yo si este emprendedor está consiguiendo o está bloqueado? obtener la rúbrica para auditar lo que la ia acaba de responder. se lanza justo después de recibir la respuesta: bucle pedir criterio → dar criterio → pedir criterio aplicado.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">45:16</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Con qué criterio debería evaluar yo si este emprendedor está consiguiendo o está bloqueado?</span></pre>
+      <p class="note"><b>Para qué:</b> Obtener la rúbrica para auditar lo que la IA acaba de responder.</p>
+      <p class="note"><b>Cómo se usa:</b> Se lanza justo después de recibir la respuesta: bucle pedir criterio → dar criterio → pedir criterio aplicado.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="dame el guion viral que me va a hacer tener más éxito en redes sociales. contraejemplo: el prompt que casi todo el mundo lanza y que produce un guion inservible. falta red social, formato, avatar, ángulo y voz: la ia rellena los huecos inventando.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:06:26</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Dame el guion viral que me va a hacer tener más éxito en redes sociales.</span></pre>
+      <p class="note"><b>Para qué:</b> Contraejemplo: el prompt que casi todo el mundo lanza y que produce un guion inservible.</p>
+      <p class="note"><b>Cómo se usa:</b> Falta red social, formato, avatar, ángulo y voz: la IA rellena los huecos inventando.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="necesito un guion para redes sociales. ¿es contenido vertical u horizontal? ¿para qué red social? ¿para qué tipo de persona? ¿para qué parte del negocio? ¿con qué ángulo nos enfocamos? ¿cuál es el objetivo, necesita cta? ¿el gancho es auditivo, visual o verbal? ¿es contenido formativo, informativo, de opinión o de entretenimiento? convertir la petición vaga en un briefing completo que la ia puede ejecutar sin inventar. son las preguntas que haría un humano del equipo; se responden todas antes de pedir el guion y se guardan como plantilla.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:07:20</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Necesito un guion para redes sociales. ¿Es contenido vertical u horizontal? ¿Para qué red social? ¿Para qué tipo de persona? ¿Para qué parte del negocio? ¿Con qué ángulo nos enfocamos? ¿Cuál es el objetivo, necesita CTA? ¿El gancho es auditivo, visual o verbal? ¿Es contenido formativo, informativo, de opinión o de entretenimiento?</span></pre>
+      <p class="note"><b>Para qué:</b> Convertir la petición vaga en un briefing completo que la IA puede ejecutar sin inventar.</p>
+      <p class="note"><b>Cómo se usa:</b> Son las preguntas que haría un humano del equipo; se responden todas antes de pedir el guion y se guardan como plantilla.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="¿cuáles son los elementos más importantes que ves en esta página web y que hacen que la persuasión funcione perfectamente bien? usar la ia como analista de un ejemplo real para extraer criterio reutilizable. se le pasa una landing que funcione; su criterio se fusiona con el tuyo y se guarda por escrito.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:12:21</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Cuáles son los elementos más importantes que ves en esta página web y que hacen que la persuasión funcione perfectamente bien?</span></pre>
+      <p class="note"><b>Para qué:</b> Usar la IA como analista de un ejemplo real para extraer criterio reutilizable.</p>
+      <p class="note"><b>Cómo se usa:</b> Se le pasa una landing que funcione; su criterio se fusiona con el tuyo y se guarda por escrito.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="quiero hacer un lanzamiento de esto. cuento con una lista de email de tanto. estoy haciendo esto y esto y este es el panorama completo. esta es mi estructura de lanzamiento, esto es lo que yo he pensado. compórtate como experto en lanzamientos y dame criterio. ¿qué te parece? ¿qué opinas? crítica experta de tu propia estructura, no una checklist genérica. se lanza con el contexto completo + una captura de un esquema dibujado a mano (claude entiende la letra humana).">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:14:42</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Quiero hacer un lanzamiento de esto. Cuento con una lista de email de tanto. Estoy haciendo esto y esto y este es el panorama completo. Esta es mi estructura de lanzamiento, esto es lo que yo he pensado. Compórtate como experto en lanzamientos y dame criterio. ¿Qué te parece? ¿Qué opinas?</span></pre>
+      <p class="note"><b>Para qué:</b> Crítica experta de tu propia estructura, no una checklist genérica.</p>
+      <p class="note"><b>Cómo se usa:</b> Se lanza con el contexto completo + una captura de un esquema dibujado a mano (Claude entiende la letra humana).</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="me parece genial esto que me has dado, me gusta, quédatelo como criterio. esto no: en lugar de esto quiero esto otro. aquí no sé muy bien lo que prefiero, dame tu punto de vista. corregir fijando lo que sí funciona y pidiendo criterio donde todavía no tienes. nunca se corrige solo con lo que no gusta: se dice también lo que está bien.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:16:19</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Me parece genial esto que me has dado, me gusta, quédatelo como criterio. Esto no: en lugar de esto quiero esto otro. Aquí no sé muy bien lo que prefiero, dame tu punto de vista.</span></pre>
+      <p class="note"><b>Para qué:</b> Corregir fijando lo que sí funciona y pidiendo criterio donde todavía no tienes.</p>
+      <p class="note"><b>Cómo se usa:</b> Nunca se corrige solo con lo que no gusta: se dice también lo que está bien.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="corrige, optimiza, potencia, mejora: ya conoces más de mi criterio, sabes cómo quiero las cosas, aplica mi criterio. segunda iteración condensando todo el feedback acumulado. se lanza al final del ciclo, cuando el contexto ya está dentro del chat.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:16:42</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Corrige, optimiza, potencia, mejora: ya conoces más de mi criterio, sabes cómo quiero las cosas, aplica mi criterio.</span></pre>
+      <p class="note"><b>Para qué:</b> Segunda iteración condensando todo el feedback acumulado.</p>
+      <p class="note"><b>Cómo se usa:</b> Se lanza al final del ciclo, cuando el contexto ya está dentro del chat.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="¿esta tarea la podrías hacer tú? que la ia audite tu lista de tareas y diga cuáles puede asumir y con qué herramienta. tarea por tarea, con la lista delante; es el paso previo a delegar.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">1:22:04</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Esta tarea la podrías hacer tú?</span></pre>
+      <p class="note"><b>Para qué:</b> Que la IA audite tu lista de tareas y diga cuáles puede asumir y con qué herramienta.</p>
+      <p class="note"><b>Cómo se usa:</b> Tarea por tarea, con la lista delante; es el paso previo a delegar.</p>
+    </article>
+    <article class="card prompt" data-lesson="1" data-text="¿cuál es el patrón que convierte a las personas más exitosas de este mundo en tal cosa? ¿o a cualquier empresa en una empresa millonaria en tanto tiempo? pedir criterio (el patrón) en lugar de una respuesta hecha. se usa en vez de «explícame cómo…»; siempre dándole antes el marco.">
+      <div class="meta">
+        <span class="tag s1">L1</span>
+        <span class="tag ts">42:27</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Cuál es el patrón que convierte a las personas más exitosas de este mundo en tal cosa? ¿O a cualquier empresa en una empresa millonaria en tanto tiempo?</span></pre>
+      <p class="note"><b>Para qué:</b> Pedir criterio (el patrón) en lugar de una respuesta hecha.</p>
+      <p class="note"><b>Cómo se usa:</b> Se usa en vez de «explícame cómo…»; siempre dándole antes el marco.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="oye, dame 5 ideas con este mismo mecanismo, con este mismo patrón, con este mismo tema, con este mismo formato. obtener variantes de algo que ya sabe que funciona, en vez de ideas sueltas: replica el mecanismo anclado a una certeza previa. solo después de haber identificado y explicado a la ia qué formato/tema/cta le está funcionando (tasas, audiencia nueva, comentarios). sin ese anclaje previo, el prompt no sirve.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">13:57</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Oye, dame 5 ideas con este mismo mecanismo, con este mismo patrón, con este mismo tema, con este mismo formato.</span></pre>
+      <p class="note"><b>Para qué:</b> Obtener variantes de algo que ya sabe que funciona, en vez de ideas sueltas: replica el mecanismo anclado a una certeza previa.</p>
+      <p class="note"><b>Cómo se usa:</b> Solo después de haber identificado y explicado a la IA qué formato/tema/CTA le está funcionando (tasas, audiencia nueva, comentarios). Sin ese anclaje previo, el prompt no sirve.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="este formato con esta idea y con esta cta nos ha dado un objetivo concreto, y por lo tanto lo que necesitamos son 5 alternativas de este vídeo: temas muy similares, formatos muy similares, llamadas a la acción muy similares, y como mucho vais a variar una cosa en cada tipo de reel. economizar la creatividad: encontrar el patrón en lugar de hacer anarquía y cambiar todo de golpe. cuando un reel funciona por encima de su media (no viral, por encima de su media). se lanza tras aislar las tres variables (formato, tema, cta) y se pide una sola variación por pieza para saber qué palanca mueve el resultado.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">17:31</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Este formato con esta idea y con esta CTA nos ha dado un objetivo concreto, y por lo tanto lo que necesitamos son 5 alternativas de este vídeo: temas muy similares, formatos muy similares, llamadas a la acción muy similares, y como mucho vais a variar una cosa en cada tipo de reel.</span></pre>
+      <p class="note"><b>Para qué:</b> Economizar la creatividad: encontrar el patrón en lugar de hacer anarquía y cambiar todo de golpe.</p>
+      <p class="note"><b>Cómo se usa:</b> Cuando un reel funciona por encima de su media (no viral, por encima de su media). Se lanza tras aislar las tres variables (formato, tema, CTA) y se pide una sola variación por pieza para saber qué palanca mueve el resultado.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="teniendo en cuenta este escenario que hemos construido, vamos a valorar dos o tres posibles escenarios: malo, bueno, muy bueno. vamos a valorar dos o tres presupuestos y defiéndeme las opciones que tengo. sustituir el ¿qué te parece mejor? por una evaluación con escenarios y justificación, para poder decidir él. cuando duda entre opciones o cuando la ia le ha recomendado algo. lo plantea como sparring: pide escenarios defendidos y luego decide él.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">19:07</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Teniendo en cuenta este escenario que hemos construido, vamos a valorar dos o tres posibles escenarios: malo, bueno, muy bueno. Vamos a valorar dos o tres presupuestos y defiéndeme las opciones que tengo.</span></pre>
+      <p class="note"><b>Para qué:</b> Sustituir el ¿qué te parece mejor? por una evaluación con escenarios y justificación, para poder decidir él.</p>
+      <p class="note"><b>Cómo se usa:</b> Cuando duda entre opciones o cuando la IA le ha recomendado algo. Lo plantea como sparring: pide escenarios defendidos y luego decide él.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="oye, este reel me falla en los 3 primeros segundos: dame 5 aperturas con una pregunta incómoda, dame 5 opciones completamente opuestas. concretar la mejora en una pieza y un criterio (los 3 primeros segundos) en lugar de pedir genéricamente que lo haga más potente. es el ejemplo de lo que sí funciona frente a &#x27;hazlo más potente&#x27; o &#x27;conviértete en un asesor del 1%&#x27;. se lanza con el problema localizado y se elige entre las opciones.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">19:47</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Oye, este reel me falla en los 3 primeros segundos: dame 5 aperturas con una pregunta incómoda, dame 5 opciones completamente opuestas.</span></pre>
+      <p class="note"><b>Para qué:</b> Concretar la mejora en una pieza y un criterio (los 3 primeros segundos) en lugar de pedir genéricamente que lo haga más potente.</p>
+      <p class="note"><b>Cómo se usa:</b> Es el ejemplo de lo que sí funciona frente a &#x27;hazlo más potente&#x27; o &#x27;conviértete en un asesor del 1%&#x27;. Se lanza con el problema localizado y se elige entre las opciones.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="hoy tengo que crear una semana de contenido. ¿cuánto es una semana de contenido? dos reels y un carrusel. ¿cuánta duración quiero que tengan esos guiones? entre 30 y 45 segundos. ¿tengo en cuenta algún formato o algún guión que ya me ha funcionado previamente en el último mes? sí, este. ¿en qué fase está mi audiencia o en qué fase tengo que colocar yo a mi audiencia? en conciencia del problema. construir el briefing previo: convertir el objetivo vago (&#x27;ayúdame a crear dos reels&#x27;) en piezas, duración, referencias que funcionaron y fase del embudo. se responde uno mismo antes de abrir el chat, y se vuelca después a la ia con contundencia y matices. es el paso de contexto del método de cinco pasos.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">24:18</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Hoy tengo que crear una semana de contenido. ¿Cuánto es una semana de contenido? Dos reels y un carrusel. ¿Cuánta duración quiero que tengan esos guiones? Entre 30 y 45 segundos. ¿Tengo en cuenta algún formato o algún guión que ya me ha funcionado previamente en el último mes? Sí, este. ¿En qué fase está mi audiencia o en qué fase tengo que colocar yo a mi audiencia? En conciencia del problema.</span></pre>
+      <p class="note"><b>Para qué:</b> Construir el briefing previo: convertir el objetivo vago (&#x27;ayúdame a crear dos reels&#x27;) en piezas, duración, referencias que funcionaron y fase del embudo.</p>
+      <p class="note"><b>Cómo se usa:</b> Se responde uno mismo ANTES de abrir el chat, y se vuelca después a la IA con contundencia y matices. Es el paso de contexto del método de cinco pasos.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="en base a lo que sabes de mi avatar, o en base a lo que sabes de mis haters o de mi competencia (que vosotros habéis tenido que nutrirla en ese conocimiento), evalúame los huecos en todo esto y arguméntamelo: dime el porqué, dime cómo crees que se debería de mejorar, dime qué falta. usar la ia en su punto fuerte: crítica, resumen y detección de huecos, no generación de ideas. aplicable a copies, diseño de producto o cualquier protocolo. requiere haberla alimentado antes con avatar, competencia y haters; después se corrige lo señalado.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">28:46</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">En base a lo que sabes de mi avatar, o en base a lo que sabes de mis haters o de mi competencia (que vosotros habéis tenido que nutrirla en ese conocimiento), evalúame los huecos en todo esto y arguméntamelo: dime el porqué, dime cómo crees que se debería de mejorar, dime qué falta.</span></pre>
+      <p class="note"><b>Para qué:</b> Usar la IA en su punto fuerte: crítica, resumen y detección de huecos, no generación de ideas.</p>
+      <p class="note"><b>Cómo se usa:</b> Aplicable a copies, diseño de producto o cualquier protocolo. Requiere haberla alimentado antes con avatar, competencia y haters; después se corrige lo señalado.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="mira, esta es mi idea impopular: esto es en lo que todo mi mercado está de acuerdo, que afecta a mi avatar de forma directa, y que yo repudio, y quiero que entiendas las razones por las que les repudio (le dais tres razones, cinco razones, las que sean). quiero que me ayudes a defender mejor esa idea impopular: que me busques datos, que me busques más argumentos, que profundices; si tiene que hacer un análisis socioeconómico de lo que te he dicho, que lo haga. pasar de la crisis de ideas a un material con fundamento: datos y argumentos para sostener la idea impopular que él ya tiene. cuando no tiene idea o ha dinamitado las suyas. primero dar la idea impopular y los motivos, luego pedir defensa (no reels). después contrasta los datos en los links que le dé.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">46:52</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Mira, esta es mi idea impopular: esto es en lo que todo mi mercado está de acuerdo, que afecta a mi avatar de forma directa, y que yo repudio, y quiero que entiendas las razones por las que les repudio (le dais tres razones, cinco razones, las que sean). Quiero que me ayudes a defender mejor esa idea impopular: que me busques datos, que me busques más argumentos, que profundices; si tiene que hacer un análisis socioeconómico de lo que te he dicho, que lo haga.</span></pre>
+      <p class="note"><b>Para qué:</b> Pasar de la crisis de ideas a un material con fundamento: datos y argumentos para sostener la idea impopular que él ya tiene.</p>
+      <p class="note"><b>Cómo se usa:</b> Cuando no tiene idea o ha dinamitado las suyas. Primero dar la idea impopular y los motivos, luego pedir defensa (no reels). Después contrasta los datos en los links que le dé.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="evalúa los huecos de mi argumento y vamos a mejorarlos; antes de que lo hagas, me das las razones por las cuales tenemos que mejorarlos, y después te digo lo que vamos a mejorar. cerrar los huecos del argumento antes de exponerlo, manteniendo él el mando de qué se cambia. iteración tras haber pedido datos y argumentos. la ia propone las razones del hueco; él decide la mejora. una variable a la vez.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">48:55</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Evalúa los huecos de mi argumento y vamos a mejorarlos; antes de que lo hagas, me das las razones por las cuales tenemos que mejorarlos, y después te digo lo que vamos a mejorar.</span></pre>
+      <p class="note"><b>Para qué:</b> Cerrar los huecos del argumento antes de exponerlo, manteniendo él el mando de qué se cambia.</p>
+      <p class="note"><b>Cómo se usa:</b> Iteración tras haber pedido datos y argumentos. La IA propone las razones del hueco; él decide la mejora. Una variable a la vez.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="ahora contraargumentamelo: dime que me equivoco y justifícame por qué me estoy equivocando. poner a la ia como enemigo/abogado del diablo para atar el argumento antes de publicarlo. cuando el argumento ya está sólido, se le da la vuelta y se le pide atacarlo. de ahí salen los roleplay de objeciones (por ejemplo, &#x27;mi cliente dice que es caro&#x27;).">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">49:26</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Ahora contraargumentamelo: dime que me equivoco y justifícame por qué me estoy equivocando.</span></pre>
+      <p class="note"><b>Para qué:</b> Poner a la IA como enemigo/abogado del diablo para atar el argumento antes de publicarlo.</p>
+      <p class="note"><b>Cómo se usa:</b> Cuando el argumento ya está sólido, se le da la vuelta y se le pide atacarlo. De ahí salen los roleplay de objeciones (por ejemplo, &#x27;mi cliente dice que es caro&#x27;).</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="ahora, ¿cuáles son las 10 frases que van a sacudir a mi audiencia? convertir el argumento ya defendido y contraargumentado en material: frases que funcionan como ganchos para construir reels. solo al final del proceso, con la idea impopular ya trabajada. de ahí salen los ganchos que él pule, en lugar de pedir ganchos en frío al principio.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">50:29</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Ahora, ¿cuáles son las 10 frases que van a sacudir a mi audiencia?</span></pre>
+      <p class="note"><b>Para qué:</b> Convertir el argumento ya defendido y contraargumentado en material: frases que funcionan como ganchos para construir reels.</p>
+      <p class="note"><b>Cómo se usa:</b> Solo al final del proceso, con la idea impopular ya trabajada. De ahí salen los ganchos que él pule, en lugar de pedir ganchos en frío al principio.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="oye, se me acaba de ocurrir no sé qué, no sé cuánto: guárdamelo. mantener un chat-lista de ideas donde vuelca ocurrencias en el momento para no perderlas. lo hace en todas sus ia: dicta por nota de voz (y transcribe) porque así conserva el porqué lo dijo. luego tira de esa lista cuando necesita material.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">51:56</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Oye, se me acaba de ocurrir no sé qué, no sé cuánto: guárdamelo.</span></pre>
+      <p class="note"><b>Para qué:</b> Mantener un chat-lista de ideas donde vuelca ocurrencias en el momento para no perderlas.</p>
+      <p class="note"><b>Cómo se usa:</b> Lo hace en todas sus IA: dicta por nota de voz (y transcribe) porque así conserva el porqué lo dijo. Luego tira de esa lista cuando necesita material.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="vale, ahora necesito hacerla aceptable, tengo que encontrar la forma de hacerla aceptable. mantener el filo de la idea impopular pero encontrar un registro publicable sin censura. después del contraargumento, cuando la idea es demasiado dura para la plataforma. busca la vía de decir el mensaje, no suavizarlo hasta la neutralidad.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">52:19</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Vale, ahora necesito hacerla aceptable, tengo que encontrar la forma de hacerla aceptable.</span></pre>
+      <p class="note"><b>Para qué:</b> Mantener el filo de la idea impopular pero encontrar un registro publicable sin censura.</p>
+      <p class="note"><b>Cómo se usa:</b> Después del contraargumento, cuando la idea es demasiado dura para la plataforma. Busca la vía de decir el mensaje, no suavizarlo hasta la neutralidad.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="¿crees que tienes contexto suficiente sobre mi avatar? siento que te has perdido: dame en un breve resumen, en un párrafo, describe mi avatar, el dolor principal que estamos intentando solucionar. comprobar si la ia está en su película antes de seguir iterando; detectar que se ha saltado el brief o el documento. primer chequeo cuando hay muchas opciones y no sabe cuál es buena. si el resumen no cuadra, se corrige el contexto antes de avanzar, para que el error no arrastre.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">56:38</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Crees que tienes contexto suficiente sobre mi avatar? Siento que te has perdido: dame en un breve resumen, en un párrafo, describe mi avatar, el dolor principal que estamos intentando solucionar.</span></pre>
+      <p class="note"><b>Para qué:</b> Comprobar si la IA está en su película antes de seguir iterando; detectar que se ha saltado el brief o el documento.</p>
+      <p class="note"><b>Cómo se usa:</b> Primer chequeo cuando hay muchas opciones y no sabe cuál es buena. Si el resumen no cuadra, se corrige el contexto antes de avanzar, para que el error no arrastre.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="defiéndeme eso que acabas de decir, o defiéndeme la postura contraria, y quiero que me la defiendas con convicción. ¿por qué esta línea es la adecuada? ¿por qué esto toca realmente el ángulo emocional de mi avatar? ¿por qué este paso dentro de mi programa es el que va a conseguir que la persona realmente tenga éxito en relación a la transformación? defiéndemelo, dame una justificación. obligar a la ia a justificar su respuesta (el &#x27;justifica tu respuesta&#x27; del colegio) en lugar de aceptarla porque suena bien. segundo chequeo, inmediatamente después de pedir el resumen del avatar. si no hay justificación sólida, no se valida la pieza.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">57:10</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Defiéndeme eso que acabas de decir, o defiéndeme la postura contraria, y quiero que me la defiendas con convicción. ¿Por qué esta línea es la adecuada? ¿Por qué esto toca realmente el ángulo emocional de mi avatar? ¿Por qué este paso dentro de mi programa es el que va a conseguir que la persona realmente tenga éxito en relación a la transformación? Defiéndemelo, dame una justificación.</span></pre>
+      <p class="note"><b>Para qué:</b> Obligar a la IA a justificar su respuesta (el &#x27;justifica tu respuesta&#x27; del colegio) en lugar de aceptarla porque suena bien.</p>
+      <p class="note"><b>Cómo se usa:</b> Segundo chequeo, inmediatamente después de pedir el resumen del avatar. Si no hay justificación sólida, no se valida la pieza.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="puntúa del 1 al 10 tu propia respuesta y dime por qué no es un 10. explícame por qué no es un 10, porque tú sabes que no lo es. que la propia ia detecte y declare sus carencias antes de que él se ponga a arreglar. tercer chequeo, antes de dar por buena cualquier salida. luego se sienta a corregir lo que ella misma ha señalado. lo convierte en hábito: puntuar antes de validar.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">57:42</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Puntúa del 1 al 10 tu propia respuesta y dime por qué no es un 10. Explícame por qué no es un 10, porque tú sabes que no lo es.</span></pre>
+      <p class="note"><b>Para qué:</b> Que la propia IA detecte y declare sus carencias antes de que él se ponga a arreglar.</p>
+      <p class="note"><b>Cómo se usa:</b> Tercer chequeo, antes de dar por buena cualquier salida. Luego se sienta a corregir lo que ella misma ha señalado. Lo convierte en hábito: puntuar antes de validar.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="necesito que me hagas preguntas, porque ahora mismo mi cabeza es básicamente como un nudo, una cuerda que se ha anudado y anudado, y yo necesito volver a desenredar ese ovillo. de una en una. salir del bloqueo y del folio en blanco dejando que la ia le haga preguntas para reconstruir el contexto. al entrar en bloqueo, antes de crear. insiste en el &#x27;de una en una&#x27; (chatgpt tiende a soltar 25 de golpe) para evitar redundancias y confusión, y responde hablando por micro.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:12:36</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Necesito que me hagas preguntas, porque ahora mismo mi cabeza es básicamente como un nudo, una cuerda que se ha anudado y anudado, y yo necesito volver a desenredar ese ovillo. De una en una.</span></pre>
+      <p class="note"><b>Para qué:</b> Salir del bloqueo y del folio en blanco dejando que la IA le haga preguntas para reconstruir el contexto.</p>
+      <p class="note"><b>Cómo se usa:</b> Al entrar en bloqueo, antes de crear. Insiste en el &#x27;de una en una&#x27; (ChatGPT tiende a soltar 25 de golpe) para evitar redundancias y confusión, y responde hablando por micro.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="si tú te colocas en el nivel de conciencia de mi avatar, ¿qué es de lo que te he contado lo que más te friccionaría? y ordéname el top 10 de cosas que te friccionarían. ordenar sus propias ideas y detectar la fricción real del avatar cuando tiene demasiadas y se abruma. cuando hay saturación de ideas (el caso de fernando). requiere haber volcado antes el contexto por micro; de la lista se separa el grano de la paja.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:14:35</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Si tú te colocas en el nivel de conciencia de mi avatar, ¿qué es de lo que te he contado lo que más te friccionaría? Y ordéname el top 10 de cosas que te friccionarían.</span></pre>
+      <p class="note"><b>Para qué:</b> Ordenar sus propias ideas y detectar la fricción real del avatar cuando tiene demasiadas y se abruma.</p>
+      <p class="note"><b>Cómo se usa:</b> Cuando hay saturación de ideas (el caso de Fernando). Requiere haber volcado antes el contexto por micro; de la lista se separa el grano de la paja.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="tú ya tienes el entendimiento de mi avatar: colócate en ese marco narrativo en el que tú aún no entiendes el problema y, en función de todas las respuestas que te acabo de dar, colócame en top 10 las ideas que más fricción te generarían. reordenar el discurso desde la ignorancia del avatar (no desde su nivel avanzado), para no hablar cinco películas por delante de la audiencia. variante del prompt anterior, con el marco narrativo fijado explícitamente. él insiste en que esto es lo que la ia sí hace bien: ordenar, no inventar.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:15:11</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Tú ya tienes el entendimiento de mi avatar: colócate en ese marco narrativo en el que tú aún no entiendes el problema y, en función de todas las respuestas que te acabo de dar, colócame en top 10 las ideas que más fricción te generarían.</span></pre>
+      <p class="note"><b>Para qué:</b> Reordenar el discurso desde la ignorancia del avatar (no desde su nivel avanzado), para no hablar cinco películas por delante de la audiencia.</p>
+      <p class="note"><b>Cómo se usa:</b> Variante del prompt anterior, con el marco narrativo fijado explícitamente. Él insiste en que esto es lo que la IA sí hace bien: ordenar, no inventar.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="prompt de instrucciones persistentes: regula la conversación para que no se pase de frenada, para que siempre tengáis un objetivo y os lo recuerde al empezar la conversación; almacena una bitácora que vaya aprendiendo las correcciones que le vais dando; y arranca pidiendo la guía antivoz (lo que no tiene que usar: expresiones, frases, temas). dar un paso a paso estable basado en contexto, ángulos, estructura, crítica y voz; evitar redundancias y vicios adquiridos con la ia, y que cada conversación arranque más rápida. no lo dicta en clase: lo deja escrito en el chat/plataforma. se pega tal cual en claude, en un proyecto con todo el material de comunicación y redes; sirve también para email marketing, reels, vídeos largos o vsl. él recomienda dárselo el mismo día y revisar las instrucciones; la ia pedirá primero la antivoz.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:23:26</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Prompt de instrucciones persistentes: regula la conversación para que no se pase de frenada, para que siempre tengáis un objetivo y os lo recuerde al empezar la conversación; almacena una bitácora que vaya aprendiendo las correcciones que le vais dando; y arranca pidiendo la guía antivoz (lo que no tiene que usar: expresiones, frases, temas).</span></pre>
+      <p class="note"><b>Para qué:</b> Dar un paso a paso estable basado en contexto, ángulos, estructura, crítica y voz; evitar redundancias y vicios adquiridos con la IA, y que cada conversación arranque más rápida.</p>
+      <p class="note"><b>Cómo se usa:</b> No lo dicta en clase: lo deja escrito en el chat/plataforma. Se pega tal cual en Claude, en un proyecto con todo el material de comunicación y redes; sirve también para email marketing, reels, vídeos largos o VSL. Él recomienda dárselo el mismo día y revisar las instrucciones; la IA pedirá primero la antivoz.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="¿qué es lo contrario a mi voz? esas expresiones que yo no uso, esas palabras que yo no diría, eso que no representa mi avatar ni por todo el oro del mundo, esos temas en los que yo no me quiero meter. construir la antivoz: el límite negativo de estilo que la ia debe respetar al escribir. es el último paso del proceso y lo primero que pide el prompt-recurso. se le da antes de componer estructuras, y le importa más lo que no debe usar que lo que sí.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:29:50</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Qué es lo contrario a mi voz? Esas expresiones que yo no uso, esas palabras que yo no diría, eso que no representa mi avatar ni por todo el oro del mundo, esos temas en los que yo no me quiero meter.</span></pre>
+      <p class="note"><b>Para qué:</b> Construir la antivoz: el límite negativo de estilo que la IA debe respetar al escribir.</p>
+      <p class="note"><b>Cómo se usa:</b> Es el último paso del proceso y lo primero que pide el prompt-recurso. Se le da antes de componer estructuras, y le importa más lo que NO debe usar que lo que sí.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="vamos a plantear este lanzamiento en base al lanzamiento que hicimos hace dos meses: lo hicimos de esta manera, seguimos este embudo, tuvimos esta captación, esta inversión, estos resultados, este número de llamadas. vamos a replantear un sistema de lanzamiento basado en todo eso: en que vamos a observar lo mejor, lo que no nos dio tanto resultado, y lo vamos a optimizar. trabajar los ángulos/escenarios con datos reales del lanzamiento anterior en vez de pedir &#x27;mejora mi lanzamiento&#x27; en abstracto. segundo paso del método (ángulos). se fijan antes los innegociables (por ejemplo, no volver a grabar los vídeos de lanzamiento, no cambiar la promesa) y se define qué se optimiza (captación de leads).">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:25:22</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Vamos a plantear este lanzamiento en base al lanzamiento que hicimos hace dos meses: lo hicimos de esta manera, seguimos este embudo, tuvimos esta captación, esta inversión, estos resultados, este número de llamadas. Vamos a replantear un sistema de lanzamiento basado en todo eso: en que vamos a observar lo mejor, lo que no nos dio tanto resultado, y lo vamos a optimizar.</span></pre>
+      <p class="note"><b>Para qué:</b> Trabajar los ángulos/escenarios con datos reales del lanzamiento anterior en vez de pedir &#x27;mejora mi lanzamiento&#x27; en abstracto.</p>
+      <p class="note"><b>Cómo se usa:</b> Segundo paso del método (ángulos). Se fijan antes los innegociables (por ejemplo, no volver a grabar los vídeos de lanzamiento, no cambiar la promesa) y se define qué se optimiza (captación de leads).</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="un escenario en el que el reel no funciona, un escenario en el que el reel funciona en mi media (en función de si busco comentarios, si busco visualizaciones, si busco lo que sea) y un escenario en el que el reel funciona muy bien. anticipar el protocolo de actuación y los aprendizajes de cada resultado antes de publicar. antes de crear la pieza. con cada escenario decide qué hará (historias, compartir, algo de publi, archivar) y qué extrae; cuida la energía del yo del mañana.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:27:05</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Un escenario en el que el reel no funciona, un escenario en el que el reel funciona en mi media (en función de si busco comentarios, si busco visualizaciones, si busco lo que sea) y un escenario en el que el reel funciona muy bien.</span></pre>
+      <p class="note"><b>Para qué:</b> Anticipar el protocolo de actuación y los aprendizajes de cada resultado antes de publicar.</p>
+      <p class="note"><b>Cómo se usa:</b> Antes de crear la pieza. Con cada escenario decide qué hará (historias, compartir, algo de publi, archivar) y qué extrae; cuida la energía del yo del mañana.</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="mira, esto es lo que me cuentan mis clientas, esto es lo que me cuentan mis leads; es esta frase, es esta entrevista que hemos tenido en la que me han dicho esto. esto quiero que me lo añadas todo en el mapa de empatía de mi avatar, quiero que me lo actualices. actualizar el documento de avatar con las frases literales del cliente en lugar de que la ia las invente o las resuma. con pantallazos de conversaciones guardados y transcritos: pega las frases exactas y marca cuáles son las potentes. luego pide almacenarlas en el documento de avatar (menciona la opción de que la ia lo actualice sola).">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:34:52</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Mira, esto es lo que me cuentan mis clientas, esto es lo que me cuentan mis leads; es esta frase, es esta entrevista que hemos tenido en la que me han dicho esto. Esto quiero que me lo añadas todo en el mapa de empatía de mi avatar, quiero que me lo actualices.</span></pre>
+      <p class="note"><b>Para qué:</b> Actualizar el documento de avatar con las frases literales del cliente en lugar de que la IA las invente o las resuma.</p>
+      <p class="note"><b>Cómo se usa:</b> Con pantallazos de conversaciones guardados y transcritos: pega las frases exactas y marca cuáles son las potentes. Luego pide almacenarlas en el documento de avatar (menciona la opción de que la IA lo actualice sola).</p>
+    </article>
+    <article class="card prompt" data-lesson="2" data-text="oye, almacénalo en mi documento de avatar. mantener el avatar como documento vivo sin volver a reescribirlo a mano. cada vez que descubre algo del avatar (una frase, una objeción, un dolor), lo dicta y lo manda almacenar en el momento.">
+      <div class="meta">
+        <span class="tag s2">L2</span>
+        <span class="tag ts">1:35:23</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Oye, almacénalo en mi documento de avatar.</span></pre>
+      <p class="note"><b>Para qué:</b> Mantener el avatar como documento vivo sin volver a reescribirlo a mano.</p>
+      <p class="note"><b>Cómo se usa:</b> Cada vez que descubre algo del avatar (una frase, una objeción, un dolor), lo dicta y lo manda almacenar en el momento.</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="actúa como mi consultor estratégico de negocio y entrevistador experto. hoy vamos a hacer la conversación más importante que tú y yo vamos a tener. vas a meter mi negocio entero dentro de ti. pregúntame de una en una, no todas a la vez. si no sabes responder algo, dilo: «no lo tengo claro». al terminar, guarda los documentos en la carpeta de forma automática. entrevista completa de negocio para meter todo el contexto en la carpeta una sola vez. chat nuevo con la carpeta activada; se pega el bloque y se responde bloque a bloque (30-60 min).">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">1:10:11</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Actúa como mi consultor estratégico de negocio y entrevistador experto. Hoy vamos a hacer la conversación más importante que tú y yo vamos a tener. Vas a meter mi negocio entero dentro de ti. Pregúntame de una en una, no todas a la vez. Si no sabes responder algo, dilo: «no lo tengo claro». Al terminar, guarda los documentos en la carpeta de forma automática.</span></pre>
+      <p class="note"><b>Para qué:</b> Entrevista completa de negocio para meter todo el contexto en la carpeta una sola vez.</p>
+      <p class="note"><b>Cómo se usa:</b> Chat nuevo con la carpeta activada; se pega el bloque y se responde bloque a bloque (30-60 min).</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="¿qué tengo mañana en mi calendario? arrancar el día con el calendario ya leído por la ia. primer mensaje del chat de cada mañana (con google calendar conectado); luego sigue toda la jornada en ese chat.">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">05:19</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">¿Qué tengo mañana en mi calendario?</span></pre>
+      <p class="note"><b>Para qué:</b> Arrancar el día con el calendario ya leído por la IA.</p>
+      <p class="note"><b>Cómo se usa:</b> Primer mensaje del chat de cada mañana (con Google Calendar conectado); luego sigue toda la jornada en ese chat.</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="tenemos que buscar hueco de 15 minutos para grabar un reel y una hora para organizar los emails de la siguiente semana; proponme dónde encajarlo. time-blocking: convertir tareas sin agendar en bloques del calendario. se sueltan las tareas del día y se confirman los huecos propuestos.">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">08:30</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Tenemos que buscar hueco de 15 minutos para grabar un reel y una hora para organizar los emails de la siguiente semana; proponme dónde encajarlo.</span></pre>
+      <p class="note"><b>Para qué:</b> Time-blocking: convertir tareas sin agendar en bloques del calendario.</p>
+      <p class="note"><b>Cómo se usa:</b> Se sueltan las tareas del día y se confirman los huecos propuestos.</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="el objetivo es aumentar la tasa de apertura de mi email; ahora está en un 47% y la quiero subir a un 80%. ¿qué me propones para hacerlo? trabajar por objetivo final en vez de por prompt cerrado. se declara objetivo y punto de partida y se encadenan 4-6 preguntas de profundización.">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">44:30</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">El objetivo es aumentar la tasa de apertura de mi email; ahora está en un 47% y la quiero subir a un 80%. ¿Qué me propones para hacerlo?</span></pre>
+      <p class="note"><b>Para qué:</b> Trabajar por objetivo final en vez de por prompt cerrado.</p>
+      <p class="note"><b>Cómo se usa:</b> Se declara objetivo y punto de partida y se encadenan 4-6 preguntas de profundización.</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="vete a los mejores marketers del mundo. quiero un análisis de verdad de los mejores webinars del mundo, de estructura, de cualquier nicho y sector, y devuélveme un dossier completo con las mejores prácticas. forzar investigación real en web antes de producir. se lanza tras el intercambio de preguntas y después se le dice «básate en este análisis».">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">48:50</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Vete a los mejores marketers del mundo. Quiero un análisis de verdad de los mejores webinars del mundo, de estructura, de cualquier nicho y sector, y devuélveme un dossier completo con las mejores prácticas.</span></pre>
+      <p class="note"><b>Para qué:</b> Forzar investigación real en web antes de producir.</p>
+      <p class="note"><b>Cómo se usa:</b> Se lanza tras el intercambio de preguntas y después se le dice «básate en este análisis».</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="dámelo para tontos, paso a paso: abre esto, pega aquí… convertir la salida técnica en instrucciones ejecutables. cada vez que la ia entrega código o un enlace sin contexto.">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">1:05:58</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Dámelo para tontos, paso a paso: abre esto, pega aquí…</span></pre>
+      <p class="note"><b>Para qué:</b> Convertir la salida técnica en instrucciones ejecutables.</p>
+      <p class="note"><b>Cómo se usa:</b> Cada vez que la IA entrega código o un enlace sin contexto.</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="quiero verificar que la información que tenemos hasta ahora es correcta. ¿qué tienes guardado de [área]? auditoría periódica del contexto para detectar datos obsoletos. chat nuevo con la carpeta, una vez al mes y por áreas; si algo está mal, «esto es erróneo, elimínalo».">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">1:33:47</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Quiero verificar que la información que tenemos hasta ahora es correcta. ¿Qué tienes guardado de [área]?</span></pre>
+      <p class="note"><b>Para qué:</b> Auditoría periódica del contexto para detectar datos obsoletos.</p>
+      <p class="note"><b>Cómo se usa:</b> Chat nuevo con la carpeta, una vez al mes y por áreas; si algo está mal, «esto es erróneo, elimínalo».</p>
+    </article>
+    <article class="card prompt" data-lesson="3" data-text="dame todo lo que tengas sobre [imagen de marca], sin olvidarte nada. migrar contexto desde otra ia por segmentos. un mensaje por área, nunca «dame todo lo que tienes de mí».">
+      <div class="meta">
+        <span class="tag s3">L3</span>
+        <span class="tag ts">24:15</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Dame todo lo que tengas sobre [imagen de marca], sin olvidarte nada.</span></pre>
+      <p class="note"><b>Para qué:</b> Migrar contexto desde otra IA por segmentos.</p>
+      <p class="note"><b>Cómo se usa:</b> Un mensaje por área, nunca «dame todo lo que tienes de mí».</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="necesito que me generes una skill que sea muy potente para copywriting de emails en concreto. trabajo mucho con newsletter para ingeniería, para personas que quieren aprender de mecánica de motos. tengo dos documentos en concreto que quiero que la skill lleven: primero, todos los emails que he escrito hasta ahora; y segundo, un documento en el que se detalla exactamente cómo quiero que se redacten todos los emails y cómo ya sé que directamente convierten muy bien estos emails. entonces quiero que tú, como experto en copywriting, recoja toda esta información y que me crees la mejor skill posible para poder utilizarla, y que siempre que tenga que generar esta parte de emails dentro de newsletter, directamente claude la pueda utilizar y que siempre lo haga perfecto. fabricar una skill propia de copywriting de emails a partir de ejemplos reales más un documento de criterios de redacción. se abre un chat (mejor dentro de un proyecto, porque ya tiene la capa 1 y la capa 2 cargadas) y se le pasan los dos documentos en .md. claude devuelve un archivo skill.md que después se sube en personalizar &gt; skills &gt; añadir &gt; cargar una habilidad.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">22:24</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Necesito que me generes una skill que sea muy potente para copywriting de emails en concreto. Trabajo mucho con newsletter para ingeniería, para personas que quieren aprender de mecánica de motos. Tengo dos documentos en concreto que quiero que la skill lleven: primero, todos los emails que he escrito hasta ahora; y segundo, un documento en el que se detalla exactamente cómo quiero que se redacten todos los emails y cómo ya sé que directamente convierten muy bien estos emails. Entonces quiero que tú, como experto en copywriting, recoja toda esta información y que me crees la mejor skill posible para poder utilizarla, y que siempre que tenga que generar esta parte de emails dentro de newsletter, directamente Claude la pueda utilizar y que siempre lo haga perfecto.</span></pre>
+      <p class="note"><b>Para qué:</b> Fabricar una skill propia de copywriting de emails a partir de ejemplos reales más un documento de criterios de redacción.</p>
+      <p class="note"><b>Cómo se usa:</b> Se abre un chat (mejor dentro de un proyecto, porque ya tiene la capa 1 y la capa 2 cargadas) y se le pasan los dos documentos en .md. Claude devuelve un archivo skill.md que después se sube en Personalizar &gt; Skills &gt; Añadir &gt; Cargar una habilidad.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="quiero crear un lead magnet para una empresa de placas fotovoltaicas que se encarga directamente de hacer un análisis, un informe detallado de cuál es el consumo de la luz que tiene una casa o una empresa ahora mismo y, en función de ello, cómo pueden optimizar toda la parte de su consumo para que primero reduzcan la huella de carbono y aporten más al medio ambiente, y segundo también se ahorre mucho dinero a nivel de gastos en cuanto a la luz a lo largo del mes e incluso a lo largo del año, que prácticamente le salga a coste cero toda la electricidad porque tenemos un método propio que permite ir prácticamente a coste cero. entonces quiero que me hagas las preguntas que necesites y a partir de ahí vamos a generar un lead magnet para las personas que se van a registrar dentro de mi publicidad, para que con unos datos en concreto que nos aporte directamente le podamos generar ese informe personalizado, y que le aporte un valor enorme y vea que literalmente tiene que comprarnos porque le podemos ahorrar mucho dinero y que además somos muy profesionales en todo esto. entonces, pregúntame todo lo que necesites y trabajamos. arrancar el diseño de un lead magnet interactivo (test que sube la factura de la luz y devuelve un informe personalizado). en un chat de claude online. él mismo comenta en 1:08:08 que aquí la capa 1 (contexto general) fue escasa y la capa 2 (contexto específico de la tarea) bien; lo ideal es ampliar la capa 1. termina delegando en claude la ampliación del contexto vía preguntas.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:06:55</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Quiero crear un lead magnet para una empresa de placas fotovoltaicas que se encarga directamente de hacer un análisis, un informe detallado de cuál es el consumo de la luz que tiene una casa o una empresa ahora mismo y, en función de ello, cómo pueden optimizar toda la parte de su consumo para que primero reduzcan la huella de carbono y aporten más al medio ambiente, y segundo también se ahorre mucho dinero a nivel de gastos en cuanto a la luz a lo largo del mes e incluso a lo largo del año, que prácticamente le salga a coste cero toda la electricidad porque tenemos un método propio que permite ir prácticamente a coste cero. Entonces quiero que me hagas las preguntas que necesites y a partir de ahí vamos a generar un lead magnet para las personas que se van a registrar dentro de mi publicidad, para que con unos datos en concreto que nos aporte directamente le podamos generar ese informe personalizado, y que le aporte un valor enorme y vea que literalmente tiene que comprarnos porque le podemos ahorrar mucho dinero y que además somos muy profesionales en todo esto. Entonces, pregúntame todo lo que necesites y trabajamos.</span></pre>
+      <p class="note"><b>Para qué:</b> Arrancar el diseño de un lead magnet interactivo (test que sube la factura de la luz y devuelve un informe personalizado).</p>
+      <p class="note"><b>Cómo se usa:</b> En un chat de Claude online. Él mismo comenta en 1:08:08 que aquí la capa 1 (contexto general) fue escasa y la capa 2 (contexto específico de la tarea) bien; lo ideal es ampliar la capa 1. Termina delegando en Claude la ampliación del contexto vía preguntas.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="pregúntame todo lo que necesites y trabajamos. forzar a claude a completar el contexto específico antes de ejecutar, para que no se le quede nada en el tintero. se cierra el prompt inicial con esta frase. lo justifica en 1:08:08: lo hace para ampliar el contexto específico. en 1:11:10 se ve el efecto: claude detecta una incoherencia de perfil (consumidor final vs empresa) y pregunta dónde poner el foco.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:07:53</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Pregúntame todo lo que necesites y trabajamos.</span></pre>
+      <p class="note"><b>Para qué:</b> Forzar a Claude a completar el contexto específico antes de ejecutar, para que no se le quede nada en el tintero.</p>
+      <p class="note"><b>Cómo se usa:</b> Se cierra el prompt inicial con esta frase. Lo justifica en 1:08:08: lo hace para ampliar el contexto específico. En 1:11:10 se ve el efecto: Claude detecta una incoherencia de perfil (consumidor final vs empresa) y pregunta dónde poner el foco.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="este es el branding y la url de mi web. úsalo de ejemplo. alimentar la capa 2 con identidad visual real (logo, colores, tipografía) para que el entregable salga con el branding de la marca. se pega la url y se adjuntan fotos o capturas del branding actual. en 1:30:14 se comprueba el resultado: el pdf final toma el branding directamente de la url.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:12:23</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Este es el branding y la URL de mi web. Úsalo de ejemplo.</span></pre>
+      <p class="note"><b>Para qué:</b> Alimentar la capa 2 con identidad visual real (logo, colores, tipografía) para que el entregable salga con el branding de la marca.</p>
+      <p class="note"><b>Cómo se usa:</b> Se pega la URL y se adjuntan fotos o capturas del branding actual. En 1:30:14 se comprueba el resultado: el PDF final toma el branding directamente de la URL.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="vamos a enfocarnos en las empresas grandes, no en el consumidor final. corregir el foco del proyecto cuando claude detecta que el mensaje está partido entre dos públicos incompatibles. respuesta de criterio a la pregunta que claude lanza en 1:11:10 sobre la incoherencia entre vender a una familia y a una empresa con 200.000 euros de factura eléctrica.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:12:06</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Vamos a enfocarnos en las empresas grandes, no en el consumidor final.</span></pre>
+      <p class="note"><b>Para qué:</b> Corregir el foco del proyecto cuando Claude detecta que el mensaje está partido entre dos públicos incompatibles.</p>
+      <p class="note"><b>Cómo se usa:</b> Respuesta de criterio a la pregunta que Claude lanza en 1:11:10 sobre la incoherencia entre vender a una familia y a una empresa con 200.000 euros de factura eléctrica.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="ejecútalo tal cual como me lo estás planteando y vemos desde ahí. aprobar el plan propuesto y pasar de análisis a producción sin reescribir el briefing. es el patrón de aprobación corta que usa todo el rato: dejar que claude proponga, validar, y solo entonces ejecutar. el mismo patrón aparece en 30:49 con «adelante», «genéralo», «es un poco más largo, créalo».">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:15:24</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Ejecútalo tal cual como me lo estás planteando y vemos desde ahí.</span></pre>
+      <p class="note"><b>Para qué:</b> Aprobar el plan propuesto y pasar de análisis a producción sin reescribir el briefing.</p>
+      <p class="note"><b>Cómo se usa:</b> Es el patrón de aprobación corta que usa todo el rato: dejar que Claude proponga, validar, y solo entonces ejecutar. El mismo patrón aparece en 30:49 con «adelante», «genéralo», «es un poco más largo, créalo».</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="quiero crear un proyecto para tal, tal y tal. tengo estos documentos que aportan conocimiento profundo sobre esta tarea en concreto, sobre este proceso. quiero que me reúnas la información para que sea lo más óptima posible para un proyecto de claude y que me des las instrucciones precisas para que funcione a la perfección. que claude redacte las instrucciones del proyecto (el «system prompt» del proyecto) a partir de los documentos madre, en vez de escribirlas a mano. se lanza en un chat abierto, no dentro del proyecto. la salida son las instrucciones que luego se pegan en el proyecto. este es el método con el que construyó el proyecto de bonus de monetización, el de historias del mes y el de ángulos rentables.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:27:25</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Quiero crear un proyecto para tal, tal y tal. Tengo estos documentos que aportan conocimiento profundo sobre esta tarea en concreto, sobre este proceso. Quiero que me reúnas la información para que sea lo más óptima posible para un proyecto de Claude y que me des las instrucciones precisas para que funcione a la perfección.</span></pre>
+      <p class="note"><b>Para qué:</b> Que Claude redacte las instrucciones del proyecto (el «system prompt» del proyecto) a partir de los documentos madre, en vez de escribirlas a mano.</p>
+      <p class="note"><b>Cómo se usa:</b> Se lanza en un chat abierto, no dentro del proyecto. La salida son las instrucciones que luego se pegan en el proyecto. Este es el método con el que construyó el proyecto de bonus de monetización, el de historias del mes y el de ángulos rentables.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="perfecto el pdf de ejemplo. quiero que ahora me crees un html que pueda incrustar dentro de go high level: el propio lead magnet, que sea una interfaz en la que se le ponga la promesa de lo que se va a ver y de lo que van a conseguir, básicamente la promesa de lo que van a lograr una vez que rellenen la información, y que le permita enviar una factura, subirla como un archivo pdf, y a partir de ahí que el proceso y el sistema sea capaz de poder generar el informe personalizado y mostrárselo en la siguiente pantalla una vez haya terminado. genera el método completo para que lo pueda incorporar ya. convertir el pdf de ejemplo en la interfaz web interactiva del lead magnet, con formulario, subida de factura y salida del informe. segundo paso, después de haber validado el pdf de ejemplo. el html resultante se copia y se pega en un bloque de código html del constructor (wordpress, gohighlevel, systeme.io).">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:32:45</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Perfecto el PDF de ejemplo. Quiero que ahora me crees un HTML que pueda incrustar dentro de Go High Level: el propio lead magnet, que sea una interfaz en la que se le ponga la promesa de lo que se va a ver y de lo que van a conseguir, básicamente la promesa de lo que van a lograr una vez que rellenen la información, y que le permita enviar una factura, subirla como un archivo PDF, y a partir de ahí que el proceso y el sistema sea capaz de poder generar el informe personalizado y mostrárselo en la siguiente pantalla una vez haya terminado. Genera el método completo para que lo pueda incorporar ya.</span></pre>
+      <p class="note"><b>Para qué:</b> Convertir el PDF de ejemplo en la interfaz web interactiva del lead magnet, con formulario, subida de factura y salida del informe.</p>
+      <p class="note"><b>Cómo se usa:</b> Segundo paso, después de haber validado el PDF de ejemplo. El HTML resultante se copia y se pega en un bloque de código HTML del constructor (WordPress, GoHighLevel, Systeme.io).</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="le diría que se autoevalúe a sí mismo toda la parte de la skill: que del 1 al 100 puntúe cómo lo ha creado, qué cosas le faltan y qué cosas se pueden incorporar más. y a partir de ahí que la optimice. autoevaluación numérica de la skill recién creada para detectar huecos antes de usarla en producción. se pide en el mismo chat donde se creó la skill, después de haber revisado a mano que el documento tiene coherencia y que incluye todo lo que se le metió. es el paso previo a probar la skill. el mismo patrón de autoevaluación se usa en 49:59 para seguridad: «le dices al propio claude que se evalúe a nivel de seguridad, a nivel de riesgos, y que mejore lo que haya que mejorar».">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:20:59</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Le diría que se autoevalúe a sí mismo toda la parte de la skill: que del 1 al 100 puntúe cómo lo ha creado, qué cosas le faltan y qué cosas se pueden incorporar más. Y a partir de ahí que la optimice.</span></pre>
+      <p class="note"><b>Para qué:</b> Autoevaluación numérica de la skill recién creada para detectar huecos antes de usarla en producción.</p>
+      <p class="note"><b>Cómo se usa:</b> Se pide en el mismo chat donde se creó la skill, después de haber revisado a mano que el documento tiene coherencia y que incluye todo lo que se le metió. Es el paso previo a probar la skill. El mismo patrón de autoevaluación se usa en 49:59 para seguridad: «le dices al propio Claude que se evalúe a nivel de seguridad, a nivel de riesgos, y que mejore lo que haya que mejorar».</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="quiero que utilices la skill de copywriting para generarme 5 emails con el objetivo de tal, tal y tal. probar la skill en un chat limpio, en condiciones reales, para ver si de verdad mejora el resultado. se abre un chat nuevo (no el de creación de la skill) e se invoca la skill por su nombre con una tarea real. si el resultado es malo o repite un problema, se vuelve al chat original con la skill.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:21:04</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Quiero que utilices la skill de copywriting para generarme 5 emails con el objetivo de tal, tal y tal.</span></pre>
+      <p class="note"><b>Para qué:</b> Probar la skill en un chat limpio, en condiciones reales, para ver si de verdad mejora el resultado.</p>
+      <p class="note"><b>Cómo se usa:</b> Se abre un chat nuevo (no el de creación de la skill) e se invoca la skill por su nombre con una tarea real. Si el resultado es malo o repite un problema, se vuelve al chat original con la skill.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="he tenido estos problemas, [ejemplo concreto]. quiero que hagas esto, esto y esto. ciclo de mejora de la skill a partir de fallos reales observados en la prueba. se copia el output defectuoso, se pega en el chat donde se creó la skill y se itera. no se rehace la skill desde cero: se parchea.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:21:28</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">He tenido estos problemas, [ejemplo concreto]. Quiero que hagas esto, esto y esto.</span></pre>
+      <p class="note"><b>Para qué:</b> Ciclo de mejora de la skill a partir de fallos reales observados en la prueba.</p>
+      <p class="note"><b>Cómo se usa:</b> Se copia el output defectuoso, se pega en el chat donde se creó la skill y se itera. No se rehace la skill desde cero: se parchea.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="prompt de migración de un chat largo a un chat nuevo, pasándole la información acumulada. cerrar un chat que se ha quedado sin contexto útil y continuar en uno nuevo sin perder el hilo, para resetear el contador de tokens. lo entrega dentro del documento «protocolo de ahorro de tokens». se usa cuando un chat se hace demasiado largo: el prompt hace que claude resuma y transfiera lo esencial al chat nuevo.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:43:48</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Prompt de migración de un chat largo a un chat nuevo, pasándole la información acumulada.</span></pre>
+      <p class="note"><b>Para qué:</b> Cerrar un chat que se ha quedado sin contexto útil y continuar en uno nuevo sin perder el hilo, para resetear el contador de tokens.</p>
+      <p class="note"><b>Cómo se usa:</b> Lo entrega dentro del documento «Protocolo de ahorro de tokens». Se usa cuando un chat se hace demasiado largo: el prompt hace que Claude resuma y transfiera lo esencial al chat nuevo.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="megaprompt de instrucciones de la tarea programada de scrapeo de avatares: qué tiene que hacer exactamente, cómo quiere que lo haga, qué términos de búsqueda debe utilizar, dónde tiene que buscar y un proceso claramente definido paso a paso. que una tarea programada en cowork se ejecute siempre con el mismo proceso y los mismos pasos, sin intervención. se escribe una vez en la tarea programada (cowork &gt; programados), se activa cada hora y el modelo elegido era el 4.8 por ser el más potente y de mejor consumo en ese momento. cada ejecución parte de la misma carpeta de escritorio vinculada (afiliados celia) como contexto específico. no dicta el texto literal en clase.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">59:30</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Megaprompt de instrucciones de la tarea programada de scrapeo de avatares: qué tiene que hacer exactamente, cómo quiere que lo haga, qué términos de búsqueda debe utilizar, dónde tiene que buscar y un proceso claramente definido paso a paso.</span></pre>
+      <p class="note"><b>Para qué:</b> Que una tarea programada en Cowork se ejecute siempre con el mismo proceso y los mismos pasos, sin intervención.</p>
+      <p class="note"><b>Cómo se usa:</b> Se escribe una vez en la tarea programada (Cowork &gt; Programados), se activa cada hora y el modelo elegido era el 4.8 por ser el más potente y de mejor consumo en ese momento. Cada ejecución parte de la misma carpeta de escritorio vinculada (afiliados Celia) como contexto específico. No dicta el texto literal en clase.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="instrucciones del proyecto «plan de monetización de bonos en renovación de viraliza»: qué es el proyecto, quién es el usuario, qué entregable produce y con qué estructura y tono. convertir el proyecto en un «gpt» que genera un pdf de plan de monetización de ~11-15 páginas siempre con la misma estructura. se pegan en el apartado instrucciones del proyecto. el propio ponente dice que ese prompt lo generó claude, no él: lo revisó, vio que tenía sentido y lo dejó. al proyecto se le suma el contexto: documento de diseño del pdf (tipografía, colores, estructura), un json con el contenido obligatorio (nombre, fotografía, diagnóstico...), un ejemplo de monetización inventado y el manual operativo de david con el framework de la fórmula f de potencia real.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">27:15</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Instrucciones del proyecto «Plan de monetización de bonos en renovación de Viraliza»: qué es el proyecto, quién es el usuario, qué entregable produce y con qué estructura y tono.</span></pre>
+      <p class="note"><b>Para qué:</b> Convertir el proyecto en un «GPT» que genera un PDF de plan de monetización de ~11-15 páginas siempre con la misma estructura.</p>
+      <p class="note"><b>Cómo se usa:</b> Se pegan en el apartado Instrucciones del proyecto. El propio ponente dice que ese prompt lo generó Claude, no él: lo revisó, vio que tenía sentido y lo dejó. Al proyecto se le suma el contexto: documento de diseño del PDF (tipografía, colores, estructura), un JSON con el contenido obligatorio (nombre, fotografía, diagnóstico...), un ejemplo de monetización inventado y el manual operativo de David con el framework de la fórmula F de potencia real.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="dime tú qué necesitas a nivel de contexto y a nivel de todo para poder hacerlo bien. evitar crear una skill vacía o mediocre por no saber qué información hace falta. se añade al pedir una skill nueva en vez de lanzar solo «quiero crear la skill». refuerza la recomendación de instalar antes la skill de anthropic «cómo crear skills», que ya pide lo necesario por su cuenta.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">1:29:29</span>
+        <span class="tag literal">literal</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Dime tú qué necesitas a nivel de contexto y a nivel de todo para poder hacerlo bien.</span></pre>
+      <p class="note"><b>Para qué:</b> Evitar crear una skill vacía o mediocre por no saber qué información hace falta.</p>
+      <p class="note"><b>Cómo se usa:</b> Se añade al pedir una skill nueva en vez de lanzar solo «quiero crear la skill». Refuerza la recomendación de instalar antes la skill de Anthropic «cómo crear skills», que ya pide lo necesario por su cuenta.</p>
+    </article>
+    <article class="card prompt" data-lesson="4" data-text="pídele el prompt a claude y dáselo a la herramienta de generación de imágenes. usar a claude como generador de prompts para otras herramientas (imagen con chatgpt, vídeo con cualquier generador). claude no genera imagen ni vídeo, pero sí redacta la instrucción precisa. él pide el prompt a claude y lo ejecuta en chatgpt.">
+      <div class="meta">
+        <span class="tag s4">L4</span>
+        <span class="tag ts">43:59</span>
+        <span class="tag reconstruido">reconstruido</span>
+      </div>
+      <pre class="prompt"><button class="copy" data-copy>copiar</button><span class="ptext">Pídele el prompt a Claude y dáselo a la herramienta de generación de imágenes.</span></pre>
+      <p class="note"><b>Para qué:</b> Usar a Claude como generador de prompts para otras herramientas (imagen con ChatGPT, vídeo con cualquier generador).</p>
+      <p class="note"><b>Cómo se usa:</b> Claude no genera imagen ni vídeo, pero sí redacta la instrucción precisa. Él pide el prompt a Claude y lo ejecuta en ChatGPT.</p>
+    </article></div>
+  <p id="empty" class="empty hidden">Nada con ese filtro. Prueba otra palabra.</p>
+
+  <h2 id="tecnicas"><span class="n">07</span>Técnicas, por lección</h2>
+  <p class="lead">58 técnicas con su minuto. Abre la que te interese: cada una dice qué hace y por qué funciona según el ponente.</p>
+  <details><summary>Lección 1 · Liderar la IA (psicología) · 12 técnicas</summary><ul class='clean'><li><b>Onboarding: preséntale el negocio antes de pedir nada</b> <span class='ts'>[03:33]</span><br>Antes de la primera tarea se le explica quién es el cliente, a quién se dirige, qué se vende, cómo se comunica la marca y qué resultado se busca.<br><i>Por qué:</i> Es el onboarding de un empleado nuevo: sin eso, por bueno que sea, no sabe cómo funciona tu negocio.</li><li><b>No es Google: orden concreta y bien redactada</b> <span class='ts'>[31:31]</span><br>Se sustituye la consulta corta por una orden explícita: qué quieres, con qué criterio y en qué formato.<br><i>Por qué:</i> A Google se le pregunta lo más corto posible; si haces lo mismo con la IA, te devuelve la respuesta más básica.</li><li><b>Colócate por encima en la jerarquía</b> <span class='ts'>[34:04]</span><br>No le preguntas qué hay que hacer: le dictas la tarea, ella propone y tú apruebas o corriges.<br><i>Por qué:</i> Si te pones por debajo es como contratar a alguien y dejar que te lidere a ti.</li><li><b>De hacer a orquestar (dos equipos)</b> <span class='ts'>[41:02]</span><br>Separas el equipo humano y el digital y te reservas la dirección: al humano lo que le hace brillar, a la IA lo repetitivo.<br><i>Por qué:</i> Mezclar roles es el desastre actual: humano saturado de tareas que odia e IA decidiendo la estrategia.</li><li><b>Las cuatro combinaciones de criterio</b> <span class='ts'>[42:27]</span><br>Antes de pedir decides: no dar criterio (respuesta mínima), darlo (mucho mejor), pedirlo (puedes auditar el suyo) o ambas (fusión).<br><i>Por qué:</i> La IA tiende a la respuesta más fácil y tu criterio es el techo de la respuesta.</li><li><b>El test de los tres segundos</b> <span class='ts'>[1:05:23]</span><br>Ante cualquier tarea: ¿puede hacerla la IA?, ¿qué criterio le doy?, ¿qué criterio le pido?<br><i>Por qué:</i> Coloca la IA al principio del razonamiento en vez de recurrir por inercia al método de siempre.</li><li><b>Plantilla de criterio reutilizable</b> <span class='ts'>[1:08:49]</span><br>Conviertes en plantilla fija lo que ya funciona (qué parte va dónde y qué quieres en cada punto).<br><i>Por qué:</i> Cada vez explicas menos: es la curva de un empleado hasta ser autónomo.</li><li><b>Micro-tareas encadenadas</b> <span class='ts'>[1:11:25]</span><br>Partes la tarea grande en decisiones pequeñas (branding, colores, tipografía, copy, bloques) y das criterio a cada una.<br><i>Por qué:</i> La petición grande produce chapuza porque la IA rellena los huecos inventando.</li><li><b>Esquema a mano + captura</b> <span class='ts'>[1:14:56]</span><br>Dibujas la estructura en papel o pizarra, haces captura y se la pasas.<br><i>Por qué:</i> Transmites jerarquía en segundos y la IA opina sobre un mapa real, no sobre una descripción abstracta.</li><li><b>Pide tareas, nunca trabajos completos</b> <span class='ts'>[1:17:41]</span><br>Encargas tareas acotadas con criterio y KPI, no un puesto de trabajo de principio a fin.<br><i>Por qué:</i> Con un trabajo entero vuelve a ser vaga; con una tarea medible lo hace bien.</li><li><b>Chat nuevo en vez de discutir</b> <span class='ts'>[1:31:02]</span><br>Si empieza a divagar o inventar, abres conversación nueva con el criterio bien dado.<br><i>Por qué:</i> Discutir con algo sin emociones se pierde siempre; sales desquiciado y sin trabajo.</li><li><b>Delega primero lo que odias, 1% mejor cada vez</b> <span class='ts'>[1:56:38]</span><br>Empiezas por tareas sueltas y pesadas, revisas y mejoras la configuración un 1% en cada iteración.<br><i>Por qué:</i> Da resultado desde el primer día sin rediseñar todo, y evita soltarle el criterio antes de que entienda tu forma de trabajar.</li></ul></details><details><summary>Lección 2 · Crear con IA (contenido) · 16 técnicas</summary><ul class='clean'><li><b>Formato, tema y CTA: una sola variable a la vez</b> <span class='ts'>[14:29]</span><br>Descompone el reel que ha funcionado en tres partes (formato, tema, CTA) y hace pruebas cambiando solo una, manteniendo las otras dos.<br><i>Por qué:</i> Si cambia todo de golpe no puede saber qué causó el resultado ni replicarlo; cambiando una variable descubre qué cualifica y retiene (por ejemplo, que el formato es el que retiene).</li><li><b>El noveno hombre: la idea impopular como cantera</b> <span class='ts'>[45:23]</span><br>Cuando no hay idea, busca eso en lo que todo su mercado está de acuerdo y que a él le rompe los nervios; se lo explica a la IA con sus razones y le pide defenderlo, no crear contenido.<br><i>Por qué:</i> Todo el mundo tiene una; es el ángulo que nadie más está usando y da material propio en lugar de posts genéricos. Su bloqueo no es falta de ideas, es falta de orden.</li><li><b>Polar no es polémico</b> <span class='ts'>[1:16:36]</span><br>Se coloca en un extremo de opinión (blanco o negro) y lo respalda con datos objetivos y contrastados.<br><i>Por qué:</i> Lo polar da posicionamiento; lo polémico es ruido sin datos (el caso Yados). Sin postura no se destaca, y el contenido polar es el que construye marca personal.</li><li><b>Jerarquía de cinco pasos: contexto, ángulos, estructura, crítica, voz</b> <span class='ts'>[1:24:19]</span><br>Ordena todo el proceso creativo: primero volcar contexto con matices, luego abrir dos o tres ángulos/escenarios, después estructurar, después criticar/iterar y solo al final aplicar la voz.<br><i>Por qué:</i> El esqueleto es siempre el mismo (contenido, producto, landing, lanzamiento). El copy no sale en el primer impacto sino en el último; invertir el orden produce texto neutro e insulso.</li><li><b>Tres escenarios antes de crear</b> <span class='ts'>[1:26:34]</span><br>Define de antemano qué pasa si la pieza falla, si funciona en su media y si funciona muy bien, con su protocolo de actuación y aprendizajes.<br><i>Por qué:</i> Anticiparse es ayudar al yo del mañana: evita el agobio posterior y las decisiones a lo loco cuando llega el resultado.</li><li><b>Hablar con el micro en vez de escribir</b> <span class='ts'>[1:14:06]</span><br>Dicta los prompts y las respuestas por voz para que la IA reciba sus expresiones naturales, y le pide ordenar ese material.<br><i>Por qué:</i> Al escribir se vuelve políticamente correcto y técnico; el micro conserva el habla real, que es la materia prima del copy y de la voz.</li><li><b>La antivoz</b> <span class='ts'>[1:29:50]</span><br>Define explícitamente lo que nunca diría: expresiones, palabras, temas y registros que no representan su avatar.<br><i>Por qué:</i> Acotar por lo negativo es más eficaz que describir el estilo: la IA tiende a usar frases que él no diría en su vida, y la antivoz le frena antes de escribir.</li><li><b>Puntuar antes de validar</b> <span class='ts'>[1:43:44]</span><br>Pide nota del 1 al 10 y el motivo de por qué no es un 10 en cada salida relevante, antes de aceptarla o seguir.<br><i>Por qué:</i> Frena el ansia de avanzar y hace que la IA declare sus huecos; en cuanto se convierte en hábito, la herramienta rinde mejor porque no se arrastran errores.</li><li><b>Regla de las tres correcciones: borrar el chat</b> <span class='ts'>[1:50:12]</span><br>Si tras tres correcciones la IA sigue sin coger el tono, o si siente que está negociando con ella, abre un chat nuevo y vuelve a empezar con más contexto.<br><i>Por qué:</i> Reconducir un chat viciado cuesta más que empezar de cero; la IA se acomoda y adopta tono de empleado pedante. Él lidera, no negocia.</li><li><b>Cazar formatos a mano (comentarios, compartidos, replies)</b> <span class='ts'>[40:21]</span><br>Analiza el formato que se repite en distintos sectores mirando comentarios, compartidos, replies y el patrón de conducta que genera, y solo entonces lo guarda con un para qué.<br><i>Por qué:</i> Los formatos que funcionan no los descubre la IA: requieren lectura de comportamiento humano. Guardar por impresión llena la carpeta de cosas sin criterio.</li><li><b>Protocolo anti-FOMO</b> <span class='ts'>[59:48]</span><br>Ante una app, prompt o estructura nueva: respirar, revisar nivel de dopamina, preguntarse desde dónde le interesa (productividad real o carencia), calcular la curva de aprendizaje y mirar antes la carga operativa y los mínimos innegociables.<br><i>Por qué:</i> El FOMO tecnológico consume foco y dinero; no se buscan soluciones antes de saber qué es ineficiente. Más herramientas no arreglan una empresa desorganizada.</li><li><b>Cronómetro y punto de conclusión</b> <span class='ts'>[25:43]</span><br>Fija cuánto tiempo dedica a la tarea y cuál es el criterio para dar la conversación por concluida, antes de abrir el chat.<br><i>Por qué:</i> Sin tiempo ni criterio de cierre entra en modo supervivencia, se queda con dos hilos mediocres y pierde horas como en Instagram sin cronómetro. Él marca el final, la IA nunca lo va a decir.</li><li><b>Briefing previo antes de promptear</b> <span class='ts'>[24:18]</span><br>Aterriza objetivo, número de piezas, duración, formatos que funcionaron en el último mes y fase del embudo antes de escribir una sola instrucción.<br><i>Por qué:</i> Cada capa que se mete antes evita lagunas de tiempo después: con el escenario claro es mucho más fácil separar el grano de la paja. El trabajo gordo se hace al inicio.</li><li><b>Chat-lista de ideas y notas de voz transcritas</b> <span class='ts'>[51:29]</span><br>Mantiene un chat dedicado a apuntar ideas en cuanto surgen, dictadas por audio y transcritas, con el motivo por el que se le ocurrieron.<br><i>Por qué:</i> Las ideas impopulares se olvidan; el audio conserva el contexto y el porqué, que es lo que después permite convertirlas en material.</li><li><b>Pantallazos literales del cliente al mapa de empatía</b> <span class='ts'>[1:33:45]</span><br>Guarda conversaciones y frases textuales de clientas y leads, elige él las potentes y se las entrega a la IA para actualizar el mapa de empatía.<br><i>Por qué:</i> Si le da dos horas de llamada y le pide los 10 mejores momentos, la IA se queda con lo insustancial (la media). Las frases exactas son las que convierten.</li><li><b>Objetivo macro, fase del lanzamiento, después piezas</b> <span class='ts'>[1:40:31]</span><br>Define qué persigue el trimestre (por ejemplo, un lanzamiento en octubre) y de ahí deduce qué necesita ahora: alcance, temas sencillos, propuestas muy consumibles, formatos de 30-45 segundos.<br><i>Por qué:</i> Sin ese marco previo no hay criterio para juzgar las ideas que devuelve la IA; y conviene fijar el objetivo antes de abrir el chat.</li></ul></details><details><summary>Lección 3 · Configurar Claude (básico) <span class='tag s3'>lección floja: solo lo útil</span> · 8 técnicas</summary><ul class='clean'><li><b>Dale una carpeta, no un chat</b> <span class='ts'>[14:55]</span><br>Se crea una carpeta y se le da acceso a Claude, que lee, escribe y organiza dentro; tú no entras nunca.<br><i>Por qué:</i> Sustituye la memoria limitada del chat por documentos persistentes.</li><li><b>Conecta Google Calendar y Drive</b> <span class='ts'>[11:56]</span><br>Ajustes → Conectores y se activan con un clic.<br><i>Por qué:</i> Es lo que le permite planificar el día, bloquear horas y leer documentos.</li><li><b>Ritual diario de 7:30</b> <span class='ts'>[05:13]</span><br>Chat nuevo + carpeta activada + «¿qué tengo en el calendario?» → añade tareas, bloquea huecos y sigue el día ahí.<br><i>Por qué:</i> Convierte la IA en planificador y tú solo ejecutas.</li><li><b>Objetivo final en vez de prompt</b> <span class='ts'>[44:04]</span><br>Declaras el resultado deseado y tu situación, y encadenas 4-6 preguntas de profundización.<br><i>Por qué:</i> Las respuestas quedan enfocadas y la IA propone caminos que no habías considerado.</li><li><b>Cierra siempre con búsqueda real en internet</b> <span class='ts'>[46:55]</span><br>Antes de producir, pides un análisis web exhaustivo y un dossier de buenas prácticas.<br><i>Por qué:</i> Evita el resultado genérico: la salida se basa en lo que funciona fuera.</li><li><b>Megaprompt de entrevista de negocio</b> <span class='ts'>[20:48]</span><br>Prompt largo que entrevista pregunta a pregunta y cierra guardando los documentos en la carpeta.<br><i>Por qué:</i> Mete tu negocio entero dentro una sola vez.</li><li><b>Un chat nuevo por día (no proyectos en esta lección)</b> <span class='ts'>[49:45]</span><br>Cada día abre chat nuevo con la carpeta activada.<br><i>Por qué:</i> El contexto vive en archivos, no en la conversación. Ojo: en la lección 4 el mismo equipo recomienda proyectos para tareas recurrentes.</li><li><b>Apps propias sobre Google Sheet</b> <span class='ts'>[1:02:21]</span><br>Pides un CRM o una app en HTML/JS con los datos en un Sheet y la despliegas con Apps Script.<br><i>Por qué:</i> Los datos quedan en el Sheet y la app es solo la capa visual.</li></ul></details><details><summary>Lección 4 · Sistema de 3 capas (IA a fondo) · 22 técnicas</summary><ul class='clean'><li><b>El protocolo de 3 capas</b> <span class='ts'>[02:51]</span><br>Divide todo el trabajo con Claude en tres capas: (1) contexto general, quién soy; (2) contexto específico más criterio, qué tarea es y con qué habilidades; (3) ejecución, conectado a la herramienta donde tiene que quedar el resultado.<br><i>Por qué:</i> Sin capas se repite contexto en cada chat, se itera de más y se llega al resultado copiando y pegando. Con capas, la conversación se acorta y la ejecución sale hecha dentro de la herramienta.</li><li><b>Capa 1 en memoria y en documentos madre</b> <span class='ts'>[03:20]</span><br>Carga identidad de persona y de empresario, a quién ayuda, oferta, mapas de empatía y avatares, además de los objetivos. Se apoya en la memoria entre chats de Claude online, que él tiene activada.<br><i>Por qué:</i> Es el contexto que casi no cambia: con darlo una vez, Claude arranca sabiendo quién eres y solo hay que afinar. Él lo nota en que abre un chat de hace un mes y Claude sigue recordando métricas y proyectos.</li><li><b>Proyectos como «GPT» con instrucciones fijas</b> <span class='ts'>[04:18]</span><br>Crea un proyecto por tarea recurrente (bonus de monetización, historias del mes, ángulos rentables, guionización viral, landings) y le mete instrucciones que siempre son las mismas más los documentos de conocimiento.<br><i>Por qué:</i> Las instrucciones se escriben una vez y limitan el consumo de tokens; los documentos del proyecto se cachean, así que reutilizarlos cuesta mucho menos que repetirlos en cada chat. Además cada proyecto funciona como un especialista entrenado en ese proceso.</li><li><b>Documentos del proyecto como caché de conocimiento</b> <span class='ts'>[05:40]</span><br>Sube los documentos al conocimiento del proyecto en lugar de adjuntarlos en cada conversación.<br><i>Por qué:</i> Se procesan una sola vez y quedan alojados como espacio seguro reutilizable; el coste de acceder a ellos es mucho menor que volver a analizarlos. Ha metido unos 600 páginas y solo consumía en torno al 20% de la capacidad de contexto.</li><li><b>Skills como capa de criterio</b> <span class='ts'>[09:07]</span><br>Instala habilidades (ventas, operaciones, marketing, arquitectura de landing, SEO, precios, psicología de marketing, PDF, frontend, edición de vídeo, cold email) que Claude activa solo cuando detecta que la tarea las necesita.<br><i>Por qué:</i> Es la diferencia entre un junior con teoría y un senior con experiencia: pasar de un 7 sobre 10 a un 10 sobre 10. Sin skills, Claude tiende a darte la razón; con skills, te corrige con criterio de sector.</li><li><b>Activar skills ya hechas de Anthropic</b> <span class='ts'>[11:34]</span><br>En Personalizar &gt; Skills &gt; Examinar aparecen las skills oficiales de Anthropic; se activan con el botón de la derecha y dentro traen el manual completo de cómo ejecutar esa tarea.<br><i>Por qué:</i> Es la vía rápida y segura: no hay que crear nada y el resultado mejora de golpe. Lo primero que recomienda revisar antes de crear una skill propia es si ya existe la de Anthropic.</li><li><b>Crear skills propias pidiéndoselas a Claude</b> <span class='ts'>[12:35]</span><br>En Personalizar &gt; Añadir &gt; Crear con Claude se abre un chat donde se le da contexto y documentos; Claude devuelve un archivo skill.md que se sube con Cargar una habilidad.<br><i>Por qué:</i> Permite skills hiperespecíficas del negocio (Power BI, copy de un nicho concreto, diseño de PDFs) sin saber programar. Y se puede crear desde cualquier sitio: un chat abierto o mejor desde un proyecto, porque ya tiene el contexto cargado.</li><li><b>Capa 3: conectores en lugar de copiar y pegar</b> <span class='ts'>[14:26]</span><br>Conecta Claude online con Airtable, Notion, Google Drive, Miro, Google Sheets, GoHighLevel, Zoho, para que el resultado se escriba directamente en la herramienta.<br><i>Por qué:</i> Elimina el último tramo manual. En vez de recibir los emails para pegarlos, Claude los sube a la plataforma de email marketing; en vez de devolver una tabla, actualiza el CRM o vuelca el calendario en Airtable.</li><li><b>Proyecto conectado a Airtable para secuencias de historias</b> <span class='ts'>[16:41]</span><br>Tiene un proyecto dedicado solo a secuencias de historias de una marca de Instagram, conectado a Airtable: le pide revisar las secuencias del mes anterior, consultar métricas y generar el calendario del mes siguiente.<br><i>Por qué:</i> Ejemplo cerrado de las tres capas funcionando a la vez: contexto general (marca), contexto específico (métricas y objetivo) y ejecución (volcado en Airtable). Resultado sin intervención manual.</li><li><b>Varios Claudes en paralelo y prompts por audio</b> <span class='ts'>[19:53]</span><br>Mantiene varias sesiones de Claude trabajando a la vez sobre la misma tarea, les va guiando, corrige y muchas veces dicta por audio en lugar de escribir.<br><i>Por qué:</i> Multiplica el rendimiento porque no espera a que una sesión termine para lanzar la siguiente. Tener tres cuentas del plan de 90 es justamente para poder paralelizar pantallas.</li><li><b>Proyecto-fábrica de bonus de monetización</b> <span class='ts'>[26:16]</span><br>Un proyecto con instrucciones (redactadas por Claude), documento de diseño del PDF, JSON con la estructura de contenido obligatoria, ejemplo de monetización y el manual operativo de David con el framework de la fórmula F de potencia real. Entra la respuesta de un formulario y sale un PDF de 11-15 páginas listo para enviar.<br><i>Por qué:</i> Demuestra que la calidad constante no viene del prompt del momento sino del contexto acumulado en el proyecto: todos los PDFs salen con la misma estructura y la misma línea visual. Tardó 10-15 minutos por informe.</li><li><b>Todo en markdown</b> <span class='ts'>[32:21]</span><br>Sube los documentos en .md en lugar de PDF o Word, tanto al proyecto como al crear skills.<br><i>Por qué:</i> Claude lo lee mucho mejor y consume bastantes menos tokens. Es una de las palancas del protocolo de ahorro.</li><li><b>Un chat por ejecución dentro del proyecto</b> <span class='ts'>[33:43]</span><br>El proyecto guarda las tres capas; cada chat nuevo dentro de él es solo ejecución de un entregable concreto.<br><i>Por qué:</i> Al tener capa 1, capa 2 y documentos ya resueltos en el proyecto, cada chat es corto: entra la petición y sale el resultado. Es lo que convierte el sistema en repetible.</li><li><b>Auditoría de embudo con Claude</b> <span class='ts'>[38:18]</span><br>Pasa el lead magnet, la landing, la estructura del funnel y las métricas, y pide un análisis en profundidad; después itera pidiendo el paso a paso y la ejecución (landing nueva, guía, HTML corregido, secuencia de 7 correos, downsell).<br><i>Por qué:</i> Claude detecta patrones en masa que uno no ve mirando caso a caso: en ese caso encontró un 87% de conversión en la landing, el desajuste entre lead magnet y oferta y que la secuencia de email repetía lo que ya hacía el PDF. Todo el ciclo de análisis más tres landings y dos secuencias en unas dos horas.</li><li><b>Autoevaluación de seguridad y riesgos en apps</b> <span class='ts'>[49:59]</span><br>Cuando crea una aplicación o una academia, le pide a Claude que se evalúe a sí mismo en seguridad y riesgos y que mejore lo que haya que mejorar antes de publicarla.<br><i>Por qué:</i> Evita lanzar una app con usuarios y datos sin revisión. Claude hace de revisor de su propio código, que es más barato que un pentest externo para un primer despliegue.</li><li><b>Tareas programadas en Cowork con megaprompt</b> <span class='ts'>[57:20]</span><br>Programa tareas que se ejecutan cada hora (o cada día) con un megaprompt que define el proceso, los términos de búsqueda y dónde buscar, y con una carpeta del escritorio vinculada como contexto específico de esa tarea.<br><i>Por qué:</i> Convierte a Claude en un trabajador que no para: el caso de los afiliados de Celia generó unos 15.000 perfiles posibles partiendo de cero. Cada ejecución repite el mismo proceso, así que el resultado es homogéneo.</li><li><b>Lead magnet interactivo en vez de PDF</b> <span class='ts'>[1:05:01]</span><br>Sustituye la guía descargable por un test o calculadora que pide unos datos (o la factura de la luz) y devuelve un informe personalizado con escenarios, retorno de la inversión y coste de no actuar.<br><i>Por qué:</i> Convierte mejor porque sube el nivel de conciencia: la persona se identifica con un perfil, ve su problema cuantificado y el siguiente paso natural es lo que tú vendes. En el caso de la fotovoltaica el informe cuantifica 130.000 euros anuales de pérdida por esperar.</li><li><b>Autoevaluación del 1 al 100 de una skill</b> <span class='ts'>[1:20:59]</span><br>Pide a Claude puntuar de 1 a 100 la skill que acaba de crear, decir qué le falta y qué se puede incorporar, y que la optimice a partir de ahí.<br><i>Por qué:</i> Fuerza una revisión crítica explícita en lugar de aceptar el primer entregable. Encaja con la lógica de que Claude con skills no te da la razón por defecto, pero conviene forzarlo cuando el output es un artefacto reutilizable.</li><li><b>Proyecto por tarea, no chat por tarea</b> <span class='ts'>[1:26:33]</span><br>Crea un proyecto por tipo de tarea (landings, reels, copywriting, bonus, historias) y dentro de cada uno abre chats independientes para cada ejecución concreta.<br><i>Por qué:</i> Si mezclas, el contexto se contamina y el coste sube. Con proyecto por tarea las instrucciones y documentos se reutilizan y cada chat nace con el contexto correcto.</li><li><b>Skill para crear skills</b> <span class='ts'>[1:29:29]</span><br>Instala la skill de Anthropic que enseña a crear skills, que a su vez pregunta qué información hace falta.<br><i>Por qué:</i> Evita skills pobres por falta de contexto y estandariza el proceso. Es la que recomienda meter a todo el mundo.</li><li><b>Protocolo de ahorro de tokens</b> <span class='ts'>[1:38:59]</span><br>Conjunto de reglas: trabajar siempre en proyectos (lo que se sube se cachea), un chat por tarea y cerrarlo al terminar, elegir modelo según la tarea (Haiku para resumir/listar/formatear/extraer/correcciones simples/primeras ideas; Sonnet por defecto para el 80% del trabajo y copy; Opus para estrategia, oferta y precios, análisis de funnel completo y textos críticos; Fable 5 para tareas que exigen mucho contexto), documentos siempre en .md, dar todo el contexto en un solo mensaje, apagar lo que no se usa y borrar archivos que solo son ruido.<br><i>Por qué:</i> Claude no cuenta mensajes, cuenta tokens, y reprocesa toda la conversación en cada envío. Con estas reglas es difícil agotar el límite de sesión y casi imposible agotar el semanal con la cuenta de 90 euros.</li><li><b>Incrustar el HTML en el constructor</b> <span class='ts'>[1:48:30]</span><br>Copia el HTML generado y lo pega en un bloque de código HTML del constructor que ya uses (WordPress, GoHighLevel, Systeme.io).<br><i>Por qué:</i> Es el puente entre la capa 3 y el negocio real: el lead magnet queda funcionando en la web sin desarrollo. Si no sabe integrarlo, le pide a Claude el paso a paso indicando qué herramientas tiene.</li></ul></details>
+
+  <h2 id="avisos"><span class="n">08</span>Los errores que señalan</h2>
+  <p class="lead">Casi todos los avisos son el mismo: pedir sin dar criterio, o delegar lo que no se puede delegar.</p>
+  <ul class="clean"><li><span class='tag s1'>L1</span> <span class='ts'>[01:59]</span> Usarla como un nuevo Google: esperar que te diga qué hacer en vez de decirle lo que tiene que hacer.</li><li><span class='tag s1'>L1</span> <span class='ts'>[30:08]</span> Pedir «sé lo más exhaustivo que puedas» genera un párrafo eterno que no se puede digerir.</li><li><span class='tag s1'>L1</span> <span class='ts'>[1:08:19]</span> No la satures: igual que no saturarías a una persona con mucha información de golpe.</li><li><span class='tag s1'>L1</span> <span class='ts'>[1:32:34]</span> «Me gusta o no me gusta» no es criterio: la mayoría de las veces no sabes qué significa que esté bien.</li><li><span class='tag s1'>L1</span> <span class='ts'>[1:34:44]</span> Se inventa cosas y tiene sesgos; hay que ser capaz de verlos.</li><li><span class='tag s1'>L1</span> <span class='ts'>[1:38:08]</span> No sustituye criterio, ni creatividad, ni tu voz.</li><li><span class='tag s2'>L2</span> <span class='ts'>[10:26]</span> La IA no es un oráculo: no es la bola de cristal, no echa las cartas, no predice el destino. Funciona por patrones de datos humanos; no es buen predictor, es buen evaluador.</li><li><span class='tag s2'>L2</span> <span class='ts'>[42:42]</span> La IA es una máquina de consenso: busca por definición lo más probable, y lo más probable es lo más común. Lo disruptivo está en el margen, así que no le pidas ideas disruptivas: perderás el tiempo y te frustrarás.</li><li><span class='tag s2'>L2</span> <span class='ts'>[19:47]</span> Decirle &#x27;hazlo más potente&#x27; o &#x27;conviértete en un asesor del 1%&#x27; (o del 0,0000001%) no significa nada a nivel operativo para la IA; lo hace todo el mundo. Hacerlo más potente depende de tu criterio y de lo emocional.</li><li><span class='tag s2'>L2</span> <span class='ts'>[18:09]</span> Preguntar &#x27;¿qué te parece mejor?&#x27; o &#x27;¿tú cómo lo ves?&#x27; hace que la IA recomiende sin criterio, porque ni siquiera le has pedido que lo justifique. Hay que pedir escenarios y defensa de las opciones.</li><li><span class='tag s2'>L2</span> <span class='ts'>[58:40]</span> Instrucciones simples, respuestas simples. Antes de dar instrucciones hay que pensar qué se quiere conseguir y qué material se puede rescatar.</li><li><span class='tag s2'>L2</span> <span class='ts'>[27:24]</span> Si coges un prompt, lo cuelas y pretendes montar 30 días de contenido, te va a dar 30 días de contenido absolutamente mediocre.</li><li><span class='tag s2'>L2</span> <span class='ts'>[1:28:36]</span> Quien diga que con un prompt sacas el contenido de 30 días en una sola mañana, miente: un buen contenido requiere foco, capas y chicha. Obtienes el mismo esfuerzo que pusiste.</li><li><span class='tag s2'>L2</span> <span class='ts'>[23:23]</span> La IA usa palabras y expresiones que vosotros no diríais en vuestra puñetera vida, ni aunque os paguen 50.000 pavos, y menos con esa espontaneidad. Hay que frenarla.</li><li><span class='tag s2'>L2</span> <span class='ts'>[22:24]</span> La IA nunca da una respuesta superior a lo que le entregas: siempre está en la línea o justo por debajo. Si le das un escenario vago y mediocre, te devuelve una respuesta mediocre.</li><li><span class='tag s2'>L2</span> <span class='ts'>[35:04]</span> Hay tres cosas que la IA no puede hacer por ti: tu conocimiento del cliente ideal, lo que ya has probado (y no quieres mirar atrás) y tu posicionamiento y tu voz.</li><li><span class='tag s2'>L2</span> <span class='ts'>[36:45]</span> El propósito no puede ser sustituido por una estructura viral: cuando os desnatáis a vosotros mismos es cuando no convertís y todo se teatraliza.</li><li><span class='tag s2'>L2</span> <span class='ts'>[1:47:49]</span> Más no es mejor, mejor es mejor. Es facilísimo tirarse 10 horas delante de Claude hasta acabar los tokens y sentir que has sido el más productivo, cuando de 700 cosas has avanzado una y a medias.</li><li><span class='tag s2'>L2</span> <span class='ts'>[41:46]</span> No guardéis referencias solo porque impresionan: si no habéis pensado el porqué, el para qué y cuándo lo vais a usar, la carpeta se llena de cosas sin criterio.</li><li><span class='tag s2'>L2</span> <span class='ts'>[1:31:28]</span> No leéis en alto vuestros propios reels, copies y landings, y es imprescindible: hay que comprobar si tiene la cadencia que usáis hablando y si usa vuestras palabras, no si la frase le quedó bonita a la IA.</li><li><span class='tag s2'>L2</span> <span class='ts'>[1:50:47]</span> Cuando la IA no coge el tono tras varias correcciones, se va acomodando y adopta tono de empleado pedante; ahí no se negocia, se cambia de chat.</li><li><span class='tag s2'>L2</span> <span class='ts'>[1:36:27]</span> Nosotros aprendemos haciendo; la IA aprende por lo que le decimos. Si falla contigo es porque no le estás contando lo que has hecho.</li><li><span class='tag s3'>L3</span> <span class='ts'>[23:41]</span> La importación automática de memoria desde ChatGPT quedó capada: hay que hacerlo a mano por segmentos.</li><li><span class='tag s3'>L3</span> <span class='ts'>[15:31]</span> Solo tiene acceso a esa carpeta, pero dentro puede borrar y reescribir todo lo que hay.</li><li><span class='tag s3'>L3</span> <span class='ts'>[1:29:44]</span> La memoria nativa no se puede comparar con una carpeta de documentos: sirve para matices, no como base.</li><li><span class='tag s3'>L3</span> <span class='ts'>[2:31]</span> Todo esto es específico de Claude y cambia cada semana.</li><li><span class='tag s4'>L4</span> <span class='ts'>[12:04]</span> Cuidado con las skills descargadas de internet: algunas traen archivos maliciosos que pueden robar información sensible y enviarla fuera. Él directamente no las usa; prefiere crear las suyas con Claude.</li><li><span class='tag s4'>L4</span> <span class='ts'>[17:10]</span> No todos los conectores están en las dos versiones. Google Drive solo funciona en Claude de escritorio; Airtable, según recuerda, no está en escritorio pero sí en la web. Hay que comprobar conector por conector dónde está disponible.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:00:23]</span> Las tareas programadas de Cowork solo se ejecutan si el ordenador está encendido y Claude está abierto. Es lo más importante a tener en cuenta antes de montar una tarea recurrente.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:02:11]</span> Ya existen tareas programadas en online, sin necesidad de tener el ordenador abierto, pero están limitadas: no dan todas las habilidades que ofrece la versión local.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:10:16]</span> La interfaz se queda pillada y a veces no coge el mensaje: hay que reenviarlo. En clase le pasó con la zona de Alicante y tuvo que repetirlo.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:18:07]</span> La memoria puede contaminar el contexto específico: le propuso N8N solo porque sabe que él usa N8N. En el caso de otra persona eso sería un error, así que conviene revisar qué introduce la memoria en la respuesta.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:41:29]</span> Con la cuenta de 20 euros, usar Opus o Fable te deja sin cupo con seguridad. Con la de 90 es complicado que usar siempre Opus te limite, pero él puede alternar porque tiene varias cuentas.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:46:26]</span> Si das poco contexto, el resultado se desvía: en la demo le generó un informe de auditoría energética en lugar del HTML del lead magnet y tuvo que redirigirlo.</li><li><span class='tag s4'>L4</span> <span class='ts'>[1:39:31]</span> Si agotas el límite de sesión te quedas parado hasta que se reinicie (en la captura aparecían 4 horas y 27 minutos), y además hay límite semanal.</li></ul>
+
+  <h2 id="dudas"><span class="n">09</span>Contradicciones entre clases (y a quién creer)</h2>
+  <table>
+    <tr><th>Tema</th><th>Qué dice uno</th><th>Qué dice otro</th><th>Criterio</th></tr>
+    <tr><td>Proyecto vs chat diario</td><td>L3: un chat nuevo cada día, sin proyectos</td><td>L4: un proyecto por tarea recurrente, con instrucciones y documentos</td><td>Gana L4: los proyectos cachean contexto. El chat diario sirve para planificar el día, no para producción recurrente.</td></tr>
+    <tr><td>Memoria nativa</td><td>L4: la memoria entre chats ayuda</td><td>L3: la memoria nativa no sustituye a los documentos</td><td>Complementarias: memoria para matices, carpeta para la verdad del negocio.</td></tr>
+    <tr><td>Cómo se pide</td><td>L3: no escribo prompts, declaro el objetivo</td><td>L2: sin briefing previo, el resultado es mediocre</td><td>El objetivo sustituye al prompt largo, no al contexto. Briefing primero, objetivo después.</td></tr>
+    <tr><td>Skills</td><td>L4: son la palanca principal</td><td>L3: no las menciona</td><td>Gana L4: instálalas y crea las tuyas.</td></tr>
+  </table>
+
+  <h2 id="frases"><span class="n">10</span>Frases que resumen el método</h2>
+  <blockquote>Empezar a tratar a la IA como si fuera nuestro empleado<cite>L1</cite></blockquote><blockquote>La IA no hace trabajos: hace tareas<cite>L1</cite></blockquote><blockquote>Estáis utilizando un Ferrari como macetero<cite>L1</cite></blockquote><blockquote>Delegad primero lo que odiáis, tareas y no proyectos, y mejorad vuestra IA un 1% cada vez<cite>L1</cite></blockquote><blockquote>La creatividad es un músculo que se entrena: no es un maná ni un golpe en la cabeza.<cite>L2</cite></blockquote><blockquote>La IA es un becario infinitamente rápido, pero a veces se tropieza consigo mismo.<cite>L2</cite></blockquote><blockquote>La IA no es un oráculo, es sparring.<cite>L2</cite></blockquote><blockquote>La IA nunca os va a dar una respuesta superior a lo que le estáis entregando: siempre va a estar en la línea o justo por debajo.<cite>L2</cite></blockquote><blockquote>La IA es una máquina de consenso: busca lo más probable, y lo disruptivo está en el margen, no en el centro.<cite>L2</cite></blockquote><blockquote>Las ideas las tengo que tener yo, no las tiene que tener la IA.<cite>L2</cite></blockquote><blockquote>El propósito no puede ser sustituido por una estructura viral.<cite>L2</cite></blockquote><blockquote>No tenéis falta de creatividad, tenéis falta de orden.<cite>L2</cite></blockquote><blockquote>Nosotros aprendemos en base a lo que hacemos y la IA aprende en base a lo que le decimos.<cite>L2</cite></blockquote><blockquote>El copy no sale en el primer impacto, sale en el último.<cite>L2</cite></blockquote><blockquote>Más no es mejor, mejor es mejor.<cite>L2</cite></blockquote><blockquote>La IA no tiene calle, solo tiene laboratorio.<cite>L2</cite></blockquote><blockquote>La idea no es yo: no me sustituye, me suma.<cite>L2</cite></blockquote><blockquote>Es un becario nuevo: lo tengo que formar, darle contexto y saber exactamente qué función quiero que cumpla.<cite>L2</cite></blockquote><blockquote>Yo no escribo prompts, yo hablo: digo el objetivo final y a partir de ahí trabajamos<cite>L3</cite></blockquote><blockquote>En el momento que le das acceso a la carpeta es como si Claude tuviese memoria infinita<cite>L3</cite></blockquote><blockquote>Ante la duda, a la IA<cite>L3</cite></blockquote><blockquote>Trabajo con Claude a nivel de tres capas para que podamos ir mucho más rápido y llevarnos la ejecución completamente lista dentro de la herramienta.<cite>L4</cite></blockquote><blockquote>Sin skills estás contratando a un junior que solo trae teoría; con skills estás contratando al mayor experto del mercado.<cite>L4</cite></blockquote><blockquote>El resultado va a variar mucho entre tener una skill o no: puedes pasar de un 7 sobre 10 a un 10 sobre 10.<cite>L4</cite></blockquote><blockquote>Con la capa 3 no tienes ni que copiar y pegar: es como tener un asistente virtual, bueno, infinitos asistentes virtuales.<cite>L4</cite></blockquote><blockquote>Tarea en concreto, creo un proyecto para tenerlo sistematizado y protocolizado; y a partir de ahí cada chat es cuando quiero trabajar en algo concreto dentro de eso.<cite>L4</cite></blockquote><blockquote>Lo que sube al conocimiento de un proyecto se cachea.<cite>L4</cite></blockquote><blockquote>Un chat por tarea: termina la tarea, cierra el chat y abre otro nuevo. Chat nuevo es igual a contador a cero.<cite>L4</cite></blockquote><blockquote>Claude es, por así decirlo, la madre. Como un José 2.0, pero enchufado de cafeína hasta arriba.<cite>L4</cite></blockquote><blockquote>Yo no tengo ni idea de esto, yo soy entrenador; yo le dije quiero esto, esto y esto, si me lo hace mal le corrijo y si me lo hace bien le aplaudo.<cite>L4</cite></blockquote><blockquote>Si queréis auditar vuestros embudos, vuestro lead magnet o vuestra tasa de apertura de newsletter, dádselo a Claude y que os haga un análisis completo y profundo.<cite>L4</cite></blockquote>
+
+  <footer>
+    Extraído de las 4 lecciones de «IA First» (IRE). Prompts verificados contra la transcripción: se comprobó que el texto literal aparece en el audio.
+    La lección 3 se ha filtrado a propósito (configuración básica). Transcripción automática, así que puede haber erratas en nombres propios o siglas.
+  </footer>
+</div>
+
+<script>
+const cards = Array.from(document.querySelectorAll('article.prompt'));
+let filter = 'all';
+const q = document.getElementById('q');
+const empty = document.getElementById('empty');
+function apply(){
+  const term = (q.value||'').trim().toLowerCase();
+  let shown = 0;
+  cards.forEach(c=>{
+    const okL = filter==='all' || c.dataset.lesson===filter;
+    const okQ = !term || c.dataset.text.includes(term);
+    const vis = okL && okQ;
+    c.classList.toggle('hidden', !vis);
+    if(vis) shown++;
+  });
+  empty.classList.toggle('hidden', shown>0);
+}
+q.addEventListener('input', apply);
+document.querySelectorAll('.chip').forEach(b=>b.addEventListener('click', ()=>{
+  document.querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  b.classList.add('on'); filter = b.dataset.f; apply();
+}));
+document.addEventListener('click', async (ev)=>{
+  const b = ev.target.closest('[data-copy]');
+  if(!b) return;
+  const txt = b.parentElement.querySelector('.ptext').innerText;
+  try{ await navigator.clipboard.writeText(txt); }catch(e){}
+  b.textContent = 'copiado'; b.classList.add('done');
+  setTimeout(()=>{ b.textContent='copiar'; b.classList.remove('done'); }, 1400);
+});
+</script>
+</body>
+</html>
